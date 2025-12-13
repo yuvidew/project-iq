@@ -13,7 +13,7 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, FolderOpenIcon } from "lucide-react";
 import { FieldDescription } from "@/components/ui/field";
 import Link from "next/link";
 import { useState } from "react";
@@ -62,6 +62,8 @@ export const SignUpForm = ({
                 >
                     <div className="flex flex-col gap-6">
                         <div className="flex flex-col items-center text-center">
+                            <Button size="icon"
+                            ><FolderOpenIcon /></Button>
                             <h1 className="text-2xl font-bold">Welcome back to <span className="text-primary">Project.IQ</span></h1>
                             <p className="text-muted-foreground text-balance">
                                 Create your account

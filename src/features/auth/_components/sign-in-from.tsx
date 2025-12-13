@@ -1,7 +1,7 @@
 "use client";
 
-import { GalleryVerticalEnd } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { FolderOpenIcon, GalleryVerticalEnd } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,7 @@ const SignInSchema = z.object({
         .min(6, { message: "Password must be at least 6 characters long" }),
 });
 
-type SignInFormValue = z.infer<typeof SignInSchema>
+type SignInFormValue = z.infer<typeof SignInSchema>;
 
 export const SignInForm = ({
     className,
@@ -46,9 +46,9 @@ export const SignInForm = ({
         },
     });
 
-    const onSubmit = (value : SignInFormValue) => {
+    const onSubmit = (value: SignInFormValue) => {
         mutate(value);
-    }
+    };
 
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -61,6 +61,9 @@ export const SignInForm = ({
                 >
                     <div className="flex flex-col gap-6">
                         <div className="flex flex-col items-center text-center">
+                            <Button size="icon">
+                                <FolderOpenIcon />
+                            </Button>
                             <h1 className="text-2xl font-bold">Welcome back</h1>
                             <p className="text-muted-foreground text-balance">
                                 Login to your Roomify.AI account
@@ -101,7 +104,13 @@ export const SignInForm = ({
                                                     placeholder={"••••••••"}
                                                     {...field}
                                                 />
-                                                <Button type="button" size={"icon"} variant={"default"} className=" bg-transparent hover:bg-transparent border-none outline-0 absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer" onClick={() => setIsEyeOpen(!isEyeOpen)}>
+                                                <Button
+                                                    type="button"
+                                                    size={"icon"}
+                                                    variant={"default"}
+                                                    className=" bg-transparent hover:bg-transparent border-none outline-0 absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer"
+                                                    onClick={() => setIsEyeOpen(!isEyeOpen)}
+                                                >
                                                     {isEyeOpen ? (
                                                         <Eye className=" size-4  text-primary" />
                                                     ) : (
@@ -115,12 +124,8 @@ export const SignInForm = ({
                                 )}
                             />
                         </div>
-                        <Button
-                            disabled={isPending} 
-                            type="submit"
-                            className="w-full"
-                        >
-                            {isPending ? <Spinner  /> : "Sign in"}
+                        <Button disabled={isPending} type="submit" className="w-full">
+                            {isPending ? <Spinner /> : "Sign in"}
                             {/* Sign In */}
                         </Button>
                         <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t hidden">
@@ -161,10 +166,7 @@ export const SignInForm = ({
                         </div>
                         <div className="text-center text-sm">
                             Don&apos;t have an account?{" "}
-                            <Link
-                                href="/sign-up"
-                                className="underline underline-offset-4"
-                            >
+                            <Link href="/sign-up" className="underline underline-offset-4">
                                 Sign up
                             </Link>
                         </div>
@@ -176,5 +178,5 @@ export const SignInForm = ({
                 and <a href="#">Privacy Policy</a>.
             </FieldDescription>
         </div>
-    )
-}
+    );
+};
