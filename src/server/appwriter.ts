@@ -7,18 +7,19 @@ import { cookies } from "next/headers";
 import { ENDPOINT, PROJECT_ID, APPWRITER_KEY } from "@/lib/config";
 import { AUTH_COOKIE } from "../features/auth/constants";
 
-export const createSessionClient = async () => {
+export const createSessionClient = async (opts?: { optional?: boolean }) => {
     const client = new Client()
         .setEndpoint(ENDPOINT)
-        .setProject(PROJECT_ID);
+        .setProject(PROJECT_ID)
+        .setKey(APPWRITER_KEY);
 
     const session = await (await cookies()).get(AUTH_COOKIE);
 
-    if (!session || !session.value) {
+
+    if (!session?.value) {
+        if (opts?.optional) return null;
         throw new Error("Unauthorized");
     }
-
-    client.setSession(session.value);
 
 
     return {

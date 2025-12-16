@@ -1,8 +1,9 @@
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { createSessionClient } from "./appwriter";
+import { TRPCContext } from "@/app/api/trpc/[trpc]/trpc-context";
 
-const t = initTRPC.create({
+const t = initTRPC.context<TRPCContext>().create({
     transformer: superjson,
 });
 

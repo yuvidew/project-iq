@@ -47,9 +47,10 @@ export const authRouter = router({
 
                 (await cookies()).set(AUTH_COOKIE, session.secret, {
                     httpOnly: true,
-                    secure: true,
+                    secure: process.env.NODE_ENV === "production",
                     sameSite: "lax",
                     path: "/",
+                    // expires: new Date(session.expire),
                 });
 
                 return { success: true };
