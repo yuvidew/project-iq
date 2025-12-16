@@ -25,8 +25,8 @@ interface OrganizationWrapperProps {
  */
 export const OrganizationWrapper = ({ search, pagination, children }: OrganizationWrapperProps) => {
     return (
-        <main className="min-h-screen bg-gray-50 py-12 px-4">
-            <div className="max-w-7xl mx-auto flex flex-col gap-6">
+        <main className="h-screen bg-gray-50 py-12 px-4">
+            <div className="max-w-7xl mx-auto flex flex-col gap-6 h-full">
                 <section className="flex flex-col items-start justify-start ">
                     <Button size="icon">
                         <FolderOpenIcon />
@@ -41,7 +41,7 @@ export const OrganizationWrapper = ({ search, pagination, children }: Organizati
                 </section>
 
 
-                <section className=" flex flex-col gap-4">
+                <section className=" flex flex-col gap-4 h-full">
 
                     {/* start to search box */}
                     <div className=' flex items-center justify-end gap-3'>
