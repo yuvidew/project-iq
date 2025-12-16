@@ -3,9 +3,9 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface UploadedImage {
-  fileId: string;
-  url: string;
-  uploadedBy: string;
+    fileId: string;
+    url: string;
+    uploadedBy: string;
 }
 
 

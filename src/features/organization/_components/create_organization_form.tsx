@@ -31,6 +31,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useUploadImage } from "@/features/image/hooks/use-upload-image-hook";
 import { cn, fileToBase64 } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
+import { useCreateOrganization } from "../hooks/use-organization";
 
 const OrganizationFromSchema = z.object({
     name: z.string().min(2, { message: "Organization name must be at least 2 characters." }).max(100, { message: "Organization name must be at most 100 characters." }),
@@ -44,6 +45,7 @@ type OrganizationFromValue = z.infer<typeof OrganizationFromSchema>;
 export const CreateOrganizationForm = () => {
     const isMobile = useIsMobile();
     const { mutate: onUploadImage, data: uploadImageData, isPending: isUploadingImage } = useUploadImage();
+    const { mutate: onCreateOrganization, isPending: isCreatingOrganization } = useCreateOrganization();
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const form = useForm<OrganizationFromValue>({
@@ -100,7 +102,15 @@ export const CreateOrganizationForm = () => {
             // altText: "optional"
         });
         fileInputRef.current?.value && (fileInputRef.current.value = "");
+    };
+
+    // Handle organization creation form submission
+    const handleOrganizationCreation = (data: OrganizationFromValue) => {
+        
+        onCreateOrganization(data);
     }
+
+    const isAllFieldsFilled = form.getValues("name") && form.getValues("slug");
 
     return (
         <Dialog>
@@ -118,7 +128,7 @@ export const CreateOrganizationForm = () => {
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form className=" flex flex-col gap-5">
+                    <form className=" flex flex-col gap-5" onSubmit={form.handleSubmit(handleOrganizationCreation)}>
                         <div className="">
                             <input
                                 ref={fileInputRef}
@@ -211,10 +221,12 @@ export const CreateOrganizationForm = () => {
                         </div>
 
                         <div className="flex items-center justify-end gap-2">
-                            <DialogClose asChild>
-                                <Button type="button" variant="secondary">Cancel</Button>
+                            <DialogClose asChild >
+                                <Button 
+                                    disabled={isCreatingOrganization || !isAllFieldsFilled} 
+                                    type="button" variant="secondary">Cancel</Button>
                             </DialogClose>
-                            <Button type="submit">Create Organization</Button>
+                            <Button type="submit" disabled={!isAllFieldsFilled || isCreatingOrganization}>Create Organization</Button>
                         </div>
                     </form>
                 </Form >
