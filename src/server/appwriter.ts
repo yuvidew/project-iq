@@ -1,6 +1,6 @@
 import "server-only";
 
-import { Client, Account, Users, Databases } from "node-appwrite";
+import { Client, Account, Users, Databases, Storage } from "node-appwrite";
 import { cookies } from "next/headers";
 
 
@@ -28,6 +28,9 @@ export const createSessionClient = async () => {
         get databases() {
             return new Databases(client);
         },
+        get storage() {
+            return new Storage(client);
+        },
     };
 
 }
@@ -44,6 +47,12 @@ export const createAdminClient = async () => {
         },
         get users() {
             return new Users(client);
+        },
+        get databases() {
+            return new Databases(client);
+        },
+        get storage() {
+            return new Storage(client);
         },
     };
 }
