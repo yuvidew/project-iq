@@ -12,9 +12,15 @@ export const publicProcedure = t.procedure;
 
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
     try {
-        const { account, databases, storage } = await createSessionClient();
-
+        const sessionClient = await createSessionClient();
+        
+        if (!sessionClient) {
+            throw new Error("Unauthorized");
+        }
+        
+        const { account, databases, storage } = sessionClient;
         const user = await account.get();
+        
         return next({
             ctx: {
                 ...ctx,
