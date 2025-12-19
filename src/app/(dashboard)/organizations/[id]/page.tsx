@@ -1,4 +1,4 @@
-import React from 'react';
+import { OrganizationIdView } from '@/features/organization-by-slug/view/organization-id-view';
 
 interface Props {
     params: Promise<{
@@ -8,7 +8,7 @@ interface Props {
 
 const OrganizationIdPage = ({ params }: Props) => {
     return (
-        <div>OrganizationIdPage</div>
+        <OrganizationIdView/>
     )
 };
 

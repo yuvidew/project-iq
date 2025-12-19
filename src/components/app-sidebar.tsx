@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import {
     Sidebar,
@@ -12,33 +12,46 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { CreditCardIcon, FolderOpenIcon, HistoryIcon, KeyIcon, LogOutIcon, MoonIcon, StarIcon, SunIcon, WorkflowIcon } from "lucide-react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { SettingsIcon, UsersIcon, LogOutIcon, MoonIcon, SunIcon, FolderOpenIcon, LayersIcon, LayoutGridIcon } from "lucide-react";
+
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion"
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 // import { authClient } from "@/lib/auth-client"
-import { useState } from "react"
-import { Spinner } from "./ui/spinner"
+import { useEffect, useState } from "react";
+import { Spinner } from "./ui/spinner";
 // import { useHasActiveSubscription } from "@/features/subscriptions/hooks/use-subscriptions"
-import { useTheme } from "next-themes"
+import { useTheme } from "next-themes";
 
 const menu_Items = [
     {
         title: "Main",
         items: [
             {
-                title: "Workflows",
-                url: "/workflows",
+                title: "Dashboard",
+                url: "/dashboard",
+                icon: LayoutGridIcon
+            },
+            {
+                title: "Projects",
+                url: "/projects",
                 icon: FolderOpenIcon
             },
             {
-                title: "Credentials",
-                url: "/credentials",
-                icon: KeyIcon
+                title: "Teams",
+                url: "/Teams",
+                icon: UsersIcon
             },
             {
-                title: "Executions",
-                url: "/executions",
-                icon: HistoryIcon
+                title: "Setting",
+                url: "/setting",
+                icon: SettingsIcon
             },
         ],
     },
@@ -47,12 +60,19 @@ const menu_Items = [
 export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
     // const { hasActiveSubscription, isLoading } = useHasActiveSubscription()
     const [isSignOutLoading, setIsSignOutLoading] = useState(false)
-    const { setTheme, theme } = useTheme();
+    const { setTheme, theme, resolvedTheme } = useTheme()
+    const [mounted, setMounted] = useState(false)
 
     const router = useRouter()
-    const pathname = usePathname();
+    const pathname = usePathname()
 
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
+    const effectiveTheme = resolvedTheme ?? theme ?? "light"
+    const themeTooltip = mounted ? (effectiveTheme === "light" ? "Light" : "Dark") : "Theme"
+    const themeLabel = mounted ? effectiveTheme : "theme"
 
     const onSignOut = async () => {
         // setIsSignOutLoading(true)
@@ -80,10 +100,10 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
                         className="gap-x-4 h-10 px-4 hover:bg-transparent">
                         <Link href={"/"} prefetch>
                             {/* <Button size={"icon"} > */}
-                            <WorkflowIcon className=" text-primary size-7" />
+                            <LayersIcon className=" text-primary size-7" />
                             {/* </Button> */}
                             <span className='  text-lg font-semibold'>
-                                Nodebase
+                                ProjectIQ
                             </span>
                         </Link>
                     </SidebarMenuButton>
@@ -119,44 +139,24 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
                         </SidebarGroupContent>
                     </SidebarGroup>
                 ))}
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>My Tasks 0</SidebarGroupLabel>
+                </SidebarGroup>
             </SidebarContent>
             <SidebarFooter>
-                {/* {!hasActiveSubscription && !isLoading && (
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            tooltip={"Upgrade to Pro"}
-                            className="gap-x-4 h-10 px-4"
-                            onClick={() => authClient.checkout({
-                                slug: "nodebase-pro"
-                            })}
-                        >
-                            <StarIcon className=" size-4" />
-                            <span>Upgrade to Pro</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                )} */}
-                <SidebarMenuItem>
-                    <SidebarMenuButton
-                        tooltip={"Billing Portal"}
-                        className="gap-x-4 h-10 px-4"
-                        // onClick={() => authClient.customer.portal()}
-                    >
-                        <CreditCardIcon className=" size-4" />
-                        <span>Billing Portal</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
 
                 <SidebarMenuItem>
                     <SidebarMenuButton
-                        tooltip={theme === "light" ? "Light" : "Dark"}
+                        tooltip={themeTooltip}
                         className="gap-x-4 h-10 px-4"
-                        onClick={() => setTheme( theme === "light" ? "dark" : "light")}
+                        onClick={() => setTheme(effectiveTheme === "light" ? "dark" : "light")}
                     >
                         <>
                             <SunIcon className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
                             <MoonIcon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
                         </>
-                        <span className=" capitalize">{theme}</span>
+                        <span className=" capitalize">{themeLabel}</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
 
