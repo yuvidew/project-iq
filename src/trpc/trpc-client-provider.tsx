@@ -17,6 +17,9 @@ import type { AppRouter } from '@/server/router';
 export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
 
 
+const includeCredentialsFetch: typeof fetch = (input, init) =>
+    fetch(input, { ...init, credentials: 'include' });
+
 let browserQueryClient: QueryClient;
 function getQueryClient() {
     if (typeof window === 'undefined') {
@@ -55,10 +58,12 @@ export function TRPCReactProvider(
                     ? httpBatchStreamLink({
                           transformer: superjson,
                           url: getUrl(),
+                          fetch: includeCredentialsFetch,
                       })
                     : httpBatchLink({
                           transformer: superjson,
                           url: getUrl(),
+                          fetch: includeCredentialsFetch,
                       }),
             ],
         }),

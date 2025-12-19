@@ -11,7 +11,6 @@ export const createSessionClient = async (opts?: { optional?: boolean }) => {
     const client = new Client()
         .setEndpoint(ENDPOINT)
         .setProject(PROJECT_ID)
-        .setKey(APPWRITER_KEY);
 
     const session = await (await cookies()).get(AUTH_COOKIE);
 
@@ -19,7 +18,9 @@ export const createSessionClient = async (opts?: { optional?: boolean }) => {
     if (!session?.value) {
         if (opts?.optional) return null;
         throw new Error("Unauthorized");
-    }
+    };
+
+    client.setSession(session.value);
 
 
     return {

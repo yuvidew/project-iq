@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/server/appwriter";
 import { publicProcedure, router } from "@/server/trpc";
-import { cookies } from "next/headers";
+import { deleteCookie, setCookie } from "cookies-next";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { AUTH_COOKIE } from "../constants";
@@ -11,14 +11,14 @@ export const authRouter = router({
     signUp: publicProcedure
         .input(
             z.object({
-                name : z.string(),
+                name: z.string(),
                 email: z.string(),
                 password: z.string(),
             })
         )
-        .mutation(async ({input}) => {
+        .mutation(async ({ input }) => {
             try {
-                const {name, email, password} = input;
+                const { name, email, password } = input;
                 const { account } = await createAdminClient();
                 await account.create(ID.unique(), email, password, name);
 
@@ -45,12 +45,12 @@ export const authRouter = router({
 
                 const session = await account.createEmailPasswordSession(email, password);
 
-                (await cookies()).set(AUTH_COOKIE, session.secret, {
+                setCookie(AUTH_COOKIE, session.secret, {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === "production",
                     sameSite: "lax",
                     path: "/",
-                    // expires: new Date(session.expire),
+                    maxAge: 60 * 60 * 24 * 7, // 7 days
                 });
 
                 return { success: true };
@@ -63,8 +63,10 @@ export const authRouter = router({
             }
         }),
     logout: publicProcedure.mutation(async () => {
-        const cookieStore = await cookies();
-        cookieStore.delete(AUTH_COOKIE);
+        deleteCookie(AUTH_COOKIE, {
+            path: "/", // MUST match cookie path
+        });
+
         return { success: true };
     }),
 });

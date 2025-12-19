@@ -13,7 +13,7 @@ export const useSignIn = () => {
         trpc.auth.signIn.mutationOptions({
             onSuccess: () => {
                 toast.success("Sign in Successfully");
-                // router.push("/");
+                window.location.href = "/organizations";
             },
             onError : (data) => toast.error(data.message)
         })
