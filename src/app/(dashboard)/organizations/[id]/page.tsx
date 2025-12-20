@@ -1,4 +1,5 @@
 import { OrganizationIdView } from '@/features/organization-by-slug/view/organization-id-view';
+import { requireAuth } from '@/lib/auth-utils';
 
 interface Props {
     params: Promise<{
@@ -6,7 +7,8 @@ interface Props {
     }>
 }
 
-const OrganizationIdPage = ({ params }: Props) => {
+const OrganizationIdPage = async ({ params }: Props) => {
+    await requireAuth()
     return (
         <OrganizationIdView/>
     )
