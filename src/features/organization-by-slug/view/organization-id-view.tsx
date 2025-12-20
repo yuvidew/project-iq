@@ -115,7 +115,9 @@ export const OrganizationIdView = () => {
             </section>
             {/* start to progress card */}
             
-            {/* start to  */}
+            {/* start to  next section*/}
+            
+            {/* end to  next section*/}
         </main>
     )
 }

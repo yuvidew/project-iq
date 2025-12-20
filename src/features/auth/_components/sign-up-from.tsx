@@ -18,9 +18,7 @@ import { FieldDescription } from "@/components/ui/field";
 import Link from "next/link";
 import { useState } from "react";
 import z from "zod";
-import { useSignIn } from "../hooks/use-sign-in";
 import { Spinner } from "@/components/ui/spinner";
-import { useSignUp } from "../hooks/use-sign-up";
 
 const SignUpSchema = z.object({
     name: z.string().min(1, { message: "Name is required" }),
@@ -37,7 +35,6 @@ export const SignUpForm = ({
     ...props
 }: React.ComponentProps<"div">) => {
     const [isEyeOpen, setIsEyeOpen] = useState(false);
-    const { mutate, isPending } = useSignUp();
     const form = useForm<z.infer<typeof SignUpSchema>>({
         resolver: zodResolver(SignUpSchema),
         defaultValues: {
@@ -48,7 +45,7 @@ export const SignUpForm = ({
     });
 
     const onSubmit = (value : SignUpFormValue) => {
-        mutate(value);
+        // mutate(value);
     }
 
     return (
@@ -139,12 +136,11 @@ export const SignUpForm = ({
                             />
                         </div>
                         <Button
-                            disabled={isPending} 
+                            // disabled={isPending} 
                             type="submit"
                             className="w-full"
                         >
-                            {isPending ? <Spinner color="default" /> : "Sign in"}
-                            {/* Sign In */}
+                            Sign Up
                         </Button>
                         <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t hidden">
                             <span className="bg-card text-muted-foreground relative z-10 px-2">
