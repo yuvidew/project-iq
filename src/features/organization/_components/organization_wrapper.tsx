@@ -25,13 +25,13 @@ interface OrganizationWrapperProps {
  */
 export const OrganizationWrapper = ({ search, pagination, children }: OrganizationWrapperProps) => {
     return (
-        <main className="h-screen bg-gray-50 py-12 px-4">
+        <main className="h-screen  py-12 px-4">
             <div className="max-w-7xl mx-auto flex flex-col gap-6 h-full">
                 <section className="flex flex-col items-start justify-start ">
                     <Button size="icon">
                         <FolderOpenIcon />
                     </Button>
-                    <h1 className="text-xl font-bold text-gray-900 mb-4 mt-5">
+                    <h1 className="text-xl font-bold  mb-4 mt-5">
                         ProjectIQ Organization Directory
                     </h1>
                     <p className="text-sm text-muted-foreground">

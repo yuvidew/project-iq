@@ -21,6 +21,9 @@ import Link from "next/link";
 import { useState } from "react";
 import z from "zod";
 import { Spinner } from "@/components/ui/spinner";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const SignInSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -35,6 +38,8 @@ export const SignInForm = ({
     className,
     ...props
 }: React.ComponentProps<"div">) => {
+    const router = useRouter();
+
     const [isEyeOpen, setIsEyeOpen] = useState(false);
     const form = useForm<z.infer<typeof SignInSchema>>({
         resolver: zodResolver(SignInSchema),
@@ -44,8 +49,39 @@ export const SignInForm = ({
         },
     });
 
-    const onSubmit = (value: SignInFormValue) => {
+    const onSubmit = async (value: SignInFormValue) => {
+        let handledError = false;
+
+        try {
+            await authClient.signIn.email(
+                {
+                    email: value.email,
+                    password: value.password,
+                    callbackURL: "/"
+                },
+                {
+                    onSuccess: () => {
+                        toast.success("Sign in successfully")
+                        router.push("/")
+                    },
+                    onError: (ctx) => {
+                        handledError = true;
+                        toast.error(ctx.error.message)
+                    }
+                }
+            )
+        } catch (error) {
+
+            if (!handledError) {
+                const message = error instanceof Error
+                    ? error.message
+                    : "Something went wrong. Please try again."
+                toast.error(message)
+            }
+        }
     };
+
+    const isPending = form.formState.isSubmitting;
 
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -63,7 +99,7 @@ export const SignInForm = ({
                             </Button>
                             <h1 className="text-2xl font-bold">Welcome back</h1>
                             <p className="text-muted-foreground text-balance">
-                                Login to your Roomify.AI account
+                                Login to your Project.IQ account
                             </p>
                         </div>
                         <div className="grid gap-3">
@@ -122,10 +158,11 @@ export const SignInForm = ({
                             />
                         </div>
                         <Button 
-                            // disabled={isPending} 
-                        type="submit" className="w-full">
-                            {/* {isPending ? <Spinner /> : "Sign in"} */}
-                            Sign In
+                            disabled={isPending} 
+                            type="submit" 
+                            className="w-full"
+                        >
+                            {isPending ? <Spinner /> : "Sign in"}
                         </Button>
                         <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t hidden">
                             <span className="bg-card text-muted-foreground relative z-10 px-2">

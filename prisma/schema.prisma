@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// ==============================
+// Prisma Generator & Datasource
+// ==============================
 
 generator client {
   provider = "prisma-client-js"
@@ -14,9 +12,132 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==============================
+// User & Auth Models
+// ==============================
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  emailVerified Boolean @default(false)
+  lastActiveOrganizationId Int?
+  lastActiveOrganization   Organization? @relation("LastActiveOrganization", fields: [lastActiveOrganizationId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions    Session[]
+  accounts    Account[]
+  memberships OrganizationMember[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id         String   @id @default(cuid())
+  accountId  String
+  providerId String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// Also update OrganizationMember.userId (and any other FK to User) to String.
+
+
+// ==============================
+// Organization Models
+// ==============================
+
+model Organization {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+
+  // ✅ description added (optional)
+  description String?
+
+  logoUrl     String?
+  ownerId     Int
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // ✅ inverse relation for last active org
+  lastActiveUsers User[] @relation("LastActiveOrganization")
+
+  members     OrganizationMember[]
+
+  @@map("organization")
+}
+
+model OrganizationMember {
+  id             Int  @id @default(autoincrement())
+  userId         String
+  organizationId Int
+
+  role           OrganizationRole @default(MEMBER)
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@map("organization_member")
+}
+
+// ==============================
+// Enums
+// ==============================
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MEMBER
 }

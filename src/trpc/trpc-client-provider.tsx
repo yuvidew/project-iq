@@ -56,15 +56,15 @@ export function TRPCReactProvider(
             links: [
                 typeof window !== 'undefined'
                     ? httpBatchStreamLink({
-                          transformer: superjson,
-                          url: getUrl(),
-                          fetch: includeCredentialsFetch,
-                      })
+                        transformer: superjson,
+                        url: getUrl(),
+                        fetch: includeCredentialsFetch,
+                    })
                     : httpBatchLink({
-                          transformer: superjson,
-                          url: getUrl(),
-                          fetch: includeCredentialsFetch,
-                      }),
+                        transformer: superjson,
+                        url: getUrl(),
+                        fetch: includeCredentialsFetch,
+                    }),
             ],
         }),
     );
