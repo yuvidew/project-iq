@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { FolderOpenIcon } from 'lucide-react'
-import { CreateOrganizationForm } from './create_organization_form';
+import { CreateOrganizationForm } from './create-organization-form';
 
 interface OrganizationWrapperProps {
     search: React.ReactNode;
