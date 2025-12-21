@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import slugify from "slugify";
 
 
@@ -29,7 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useUploadImage } from "@/features/image/hooks/use-upload-image-hook";
-import { cn, fileToBase64 } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { useCreateOrganization } from "../hooks/use-organization";
 
@@ -46,6 +46,9 @@ export const CreateOrganizationForm = () => {
     const isMobile = useIsMobile();
     const { mutate: onUploadImage, data: uploadImageData, isPending: isUploadingImage } = useUploadImage();
     const { mutate: onCreateOrganization, isPending: isCreatingOrganization } = useCreateOrganization();
+    
+    const [open, setOpen] = useState<boolean>(false);
+
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const form = useForm<OrganizationFromValue>({
@@ -93,12 +96,8 @@ export const CreateOrganizationForm = () => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const base64 = await fileToBase64(file);
-
         onUploadImage({
-            base64,
-            fileName: file.name,
-            mimeType: file.type || "application/octet-stream",
+            file,
             // altText: "optional"
         });
         fileInputRef.current?.value && (fileInputRef.current.value = "");
@@ -106,14 +105,18 @@ export const CreateOrganizationForm = () => {
 
     // Handle organization creation form submission
     const handleOrganizationCreation = (data: OrganizationFromValue) => {
-        
-        onCreateOrganization(data);
+        onCreateOrganization(data, {
+            onSuccess : () => {
+                form.reset();
+                setOpen(false);
+            }
+        });
     }
 
     const isAllFieldsFilled = form.getValues("name") && form.getValues("slug");
 
     return (
-        <Dialog>
+        <Dialog open = {open} onOpenChange={(value) => setOpen(value)}>
             <DialogTrigger asChild>
                 <Button size={isMobile ? "icon" : "default"}>
                     <PlusIcon className=" size-4" />
@@ -226,7 +229,18 @@ export const CreateOrganizationForm = () => {
                                     disabled={isCreatingOrganization || !isAllFieldsFilled} 
                                     type="button" variant="secondary">Cancel</Button>
                             </DialogClose>
-                            <Button type="submit" disabled={!isAllFieldsFilled || isCreatingOrganization}>Create Organization</Button>
+                            <Button 
+                                type="submit" 
+                                disabled={!isAllFieldsFilled || isCreatingOrganization}
+                            >
+                                {isCreatingOrganization ? (
+                                    <>
+                                        <Spinner/> Creating org...
+                                    </>
+                                ) : (
+                                    "Create Organization"
+                                )}
+                            </Button>
                         </div>
                     </form>
                 </Form >

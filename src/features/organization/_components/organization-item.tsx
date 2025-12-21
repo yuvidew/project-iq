@@ -6,7 +6,7 @@ import {
     Lightbulb,
     Rocket,
 } from "lucide-react";
-import { OrganizationCard } from "./organization_card";
+import { OrganizationCard } from "./organization-card";
 
 export const OrganizationItem = () => {
     const organizations = [

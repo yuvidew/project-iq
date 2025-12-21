@@ -28,9 +28,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessions    Session[]
-  accounts    Account[]
-  memberships OrganizationMember[]
+  sessions            Session[]
+  accounts            Account[]
+  memberships         OrganizationMember[]
+  ownedOrganizations  Organization[] @relation("OrganizationOwner")
 
   @@map("user")
 }
@@ -102,7 +103,8 @@ model Organization {
   description String?
 
   logoUrl     String?
-  ownerId     Int
+  ownerId     String
+  owner       User     @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -1,5 +1,5 @@
 import { APPWRITER_BUCKET_ID, ENDPOINT, PROJECT_ID } from "@/lib/config";
-import { protectedProcedure, router } from "@/server/trpc";
+import {  publicProcedure, router } from "@/server/trpc";
 import { ID } from "node-appwrite";
 import { z } from "zod";
 
@@ -25,11 +25,10 @@ const base64ToByteArray = (value: string) => {
 };
 
 export const imageRouter = router({
-    uploadImage: protectedProcedure
+    uploadImage: publicProcedure
         .input(UploadImageSchema)
         .mutation(async ({ input, ctx }) => {
             const { base64, fileName, mimeType, altText } = input;
-            const userId = ctx.user.$id;
 
             // strip "data:image/png;base64," if present
             const cleaned = base64.includes("base64,")
@@ -56,7 +55,6 @@ export const imageRouter = router({
                 fileId: uploaded.$id,
                 url: fileUrl,
                 altText,
-                uploadedBy: userId,
             };
         }),
 });

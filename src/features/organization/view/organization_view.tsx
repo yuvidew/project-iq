@@ -1,10 +1,10 @@
 "use client";
 
 
-import { OrganizationWrapper } from "../_components/organization_wrapper";
+import { OrganizationWrapper } from "../_components/organization-wrapper";
 import { SearchBox } from "@/components/search_box";
-import { OrganizationPagination } from "../_components/organization_pagination";
-import { OrganizationEmptyView } from "../_components/organization_empty_view";
+import { OrganizationPagination } from "../_components/organization-pagination";
+import { OrganizationEmptyView } from "../_components/organization-empty-view";
 
 export const OrganizationView = () => {
 
