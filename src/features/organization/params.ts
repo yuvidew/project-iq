@@ -2,7 +2,7 @@ import { PAGINATION } from "@/lib/config";
 import {parseAsInteger , parseAsString} from "nuqs/server";
 
 
-export const credentialParams = {
+export const organizationParams = {
     page : parseAsInteger
         .withDefault(PAGINATION.DEFAULT_PAGE)
         .withOptions({

@@ -8,30 +8,36 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "./ui/input";
 import { SearchIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Spinner } from "./ui/spinner";
 
-const ITEMS = [
-    "Customer onboarding",
-    "Workflow approvals",
-    "Quarterly reporting",
-    "Analytics exports",
-    "Incident review",
-    "Access requests",
-    "Data sync job",
-    "Marketing pipeline",
-    "Billing reconciliation",
-    "Release checklist",
-];
 
-export const SearchWithDropdown = () => {
+
+interface Props  {
+    list : {
+        value : string,
+        label : string,
+        id : number
+    }[],
+    isLoading : boolean
+}
+
+export const SearchWithDropdown = ({list , isLoading} : Props) => {
     const [query, setQuery] = useState("");
     const [open, setOpen] = useState(false);
+    const router = useRouter();
 
     const filteredItems = useMemo(() => {
         const trimmed = query.trim().toLowerCase();
-        if (!trimmed) return ITEMS;
-        return ITEMS.filter((item) => item.toLowerCase().includes(trimmed));
-    }, [query]);
+        if (!trimmed) return list;
+        return list.filter(({value}) => value.toLowerCase().includes(trimmed));
+    }, [query, list]);
 
+    const handleSelect = (item: Props["list"][number]) => {
+        setQuery(item.value);
+        setOpen(false);
+        router.push(`/organization/${item.id}`);
+    };
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -44,10 +50,20 @@ export const SearchWithDropdown = () => {
                             setQuery(event.target.value);
                             if (!open) setOpen(true);
                         }}
+                        onKeyDown={(event) => {
+                            if (event.key === "Enter" && filteredItems[0]) {
+                                event.preventDefault();
+                                handleSelect(filteredItems[0]);
+                            }
+                        }}
                         onFocus={() => setOpen(true)}
                         placeholder="Search items..."
-                        className="pl-9"
+                        className="pl-9 pr-8"
+                        disabled={isLoading && !list.length}
                     />
+                    {isLoading && (
+                        <Spinner className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    )}
                 </div>
             </PopoverTrigger>
             <PopoverContent
@@ -55,18 +71,23 @@ export const SearchWithDropdown = () => {
                 align="start"
                 onOpenAutoFocus={(event) => event.preventDefault()}
             >
-                {filteredItems.length ? (
+                {isLoading ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground flex items-center gap-2">
+                        <Spinner className="size-4" />
+                        Loading...
+                    </div>
+                ) : filteredItems.length ? (
                     <ul className="max-h-60 overflow-y-auto">
                         {filteredItems.map((item) => (
                             <li
-                                key={item}
+                                key={item.id}
                                 className="cursor-pointer px-3 py-2 text-sm hover:bg-muted"
-                                onMouseDown={() => {
-                                    setQuery(item);
-                                    setOpen(false);
+                                onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    handleSelect(item);
                                 }}
                             >
-                                {item}
+                                {item.label}
                             </li>
                         ))}
                     </ul>

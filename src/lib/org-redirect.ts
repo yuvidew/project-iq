@@ -15,15 +15,15 @@ export async function resolveUserOrganizationRedirect(user: {
         const lastOrg = memberships.find((m) => m.organizationId === user.lastActiveOrganizationId);
 
         if (lastOrg) {
-            // return `/organizations/${lastOrg.organization.slug}`;
-            return "/organizations";
+            return `/organizations/${lastOrg.organization.slug}`;
+            // return "/organizations";
         }
     }
 
     if (memberships.length === 0) return "/organizations";
     if (memberships.length === 1) {
-        // return `/organizations/${memberships[0].organization.slug}`;
-        return "/organizations";
+        return `/organizations/${memberships[0].organization.slug}`;
+        // return "/organizations";
     }
 
     return "/organizations";

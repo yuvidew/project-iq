@@ -1,22 +1,18 @@
-import { trpc } from "@/trpc/react";
-import { prefetch } from "@/trpc/server";
+import { prefetch, trpc } from "@/trpc/server";
 import type { inferInput } from "@trpc/tanstack-react-query";
-;
-
-type Input = inferInput<typeof trpc.organization.getOrganizations>;
 
 /**
- * Prefetch all credential
+ * Prefetch all Organization
  */
 
-export const prefetchCredentials = (params : Input) => {
+export const prefetchOrganizations = (params : inferInput<typeof trpc.organization.getOrganizations>) => {
     return prefetch(trpc.organization.getOrganizations.queryOptions(params));
 };
 
 /**
- * Prefetch a single credential
+ * Prefetch a single Organization
  */
 
-export const prefetchCredential = (id : number) => {
+export const prefetchOrganization = (id : number) => {
     return prefetch(trpc.organization.getOrganizationById.queryOptions(id));
 }
