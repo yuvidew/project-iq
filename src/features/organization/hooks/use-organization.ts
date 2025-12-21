@@ -1,7 +1,10 @@
+﻿"use client";
+
 import { useTRPC } from "@/trpc/trpc-client-provider";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useOrganizationsParams } from "./use-organizations-params";
 
 
 // Hooks for organization operations
@@ -21,14 +24,12 @@ export const useCreateOrganization = () => {
 };
 
 // // Hook to get list of organizations
-// export const useGetOrganizations = () => {
-//     const trpc = useTRPC();
-//     // TODO: Add pagination and search support
-//     return useQuery({
-//         queryKey: ["organizations"],
-//         queryFn: () => trpc.organization.getOrganizations.queryOptions(),
-//     });
-// };
+export const useSuspenseOrganizations = () => {
+    const trpc = useTRPC();
+    const [params] = useOrganizationsParams();
+
+    return useSuspenseQuery(trpc.organization.getOrganizations.queryOptions(params));
+};
 
 // // Hook to get organization by ID
 // export const useGetOrganizationById = (id: string) => {
@@ -39,29 +40,47 @@ export const useCreateOrganization = () => {
 //     });
 // };
 
-// // Hook to update organization
-// export const useUpdateOrganization = () => {
-//     const trpc = useTRPC();
-//     return useMutation(
-//         trpc.organization.updateOrganization.mutationOptions({
-//             onSuccess: () => {
-//                 toast.success("Organization updated successfully");
-//             },
-//             onError: (data) => toast.error(data.message)
-//         })
-//     );
-// };
+// Hook to update organization
+export const useUpdateOrganization = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+    return useMutation(
+        trpc.organization.updateOrganization.mutationOptions({
+            onSuccess: (data) => {
+                toast.success(`Organization "${data.name}" saved`);
 
-// // Hook to delete organization
-// export const useDeleteOrganization = () => {
-//     const trpc = useTRPC();
-//     return useMutation(
-//         trpc.organization.deleteOrganization.mutationOptions({
-//             onSuccess: () => {
-//                 toast.success("Organization deleted successfully");
-//             },
-//             onError: (data) => toast.error(data.message)
-//         })
-//     );
-// };
+                queryClient.invalidateQueries(
+                    trpc.organization.getOrganizations.queryOptions({}),
+                );
+
+                queryClient.invalidateQueries(
+                    trpc.organization.getOrganizationById.queryFilter(data.id),
+                );
+            },
+            onError: (data) => toast.error(data.message)
+        })
+    );
+};
+
+// Hook to delete organization
+export const useRemoveOrganization = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+    return useMutation(
+        trpc.organization.removeOrganization.mutationOptions({
+            onSuccess: (data) => {
+                toast.success(`Organization "${data.name}" removed`);
+
+                queryClient.invalidateQueries(
+                    trpc.organization.getOrganizations.queryOptions({}),
+                );
+
+                queryClient.invalidateQueries(
+                    trpc.organization.getOrganizationById.queryFilter(data.id),
+                );
+            },
+            onError: (data) => toast.error(data.message)
+        })
+    );
+};
 

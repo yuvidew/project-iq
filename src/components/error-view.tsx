@@ -22,8 +22,8 @@ export const ErrorView = ({
         // TODO: implement retry logic
     }
     return (
-        <div className=" flex justify-center items-center h-full flex-1 flex-col gap-y-4">
-            <Card className=" lg:w-lg md:w-md w-full flex flex-col justify-center items-center p-6 gap-y-4">
+        <div className=" flex justify-center items-center h-screen flex-1 flex-col gap-y-4">
+            <Card className=" lg:w-lg md:w-md w-[80%] flex flex-col justify-center items-center p-6 gap-y-4 bg-sidebar">
 
                 <AlertTriangleIcon className="text-primary size-8" />
 

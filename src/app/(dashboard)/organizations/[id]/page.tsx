@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth-utils';
 
 interface Props {
     params: Promise<{
-        slug: string
+        id: string
     }>
 }
 

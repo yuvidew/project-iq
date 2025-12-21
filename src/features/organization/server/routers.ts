@@ -193,7 +193,7 @@ export const organizationRouter = router({
 
     }),
 
-    deleteOrganization: protectedProcedure.input(
+    removeOrganization: protectedProcedure.input(
         z.object({
             organizationId: z.number(),
         })
@@ -217,11 +217,9 @@ export const organizationRouter = router({
             });
         }
 
-        await prisma.organization.delete({
+        return await prisma.organization.delete({
             where: { id: organizationId },
         });
-
-        return { success: true };
 
     }),
 });

@@ -9,7 +9,7 @@ export const AppHeader = () => {
 
             <div className=' flex items-center gap-4'>
                 <SidebarTrigger />
-                <SearchWithDropdown />
+                <SearchWithDropdown isLoading = {false} list={[]} />
             </div>
 
             <div>
