@@ -1,8 +1,6 @@
 "use client";
-import React from "react";
 
 import {
-    CommandDialog,
     CommandEmpty,
     CommandGroup,
     CommandInput,

@@ -31,14 +31,11 @@ export const useSuspenseOrganizations = () => {
     return useSuspenseQuery(trpc.organization.getOrganizations.queryOptions(params));
 };
 
-// // Hook to get organization by ID
-// export const useGetOrganizationById = (id: string) => {
-//     const trpc = useTRPC();
-//     return useQuery({
-//         queryKey: ["organization", id],
-//         queryFn: () => trpc.organization.getOrganizationById.queryOptions(id),
-//     });
-// };
+// Hook to get organization by ID
+export const useGetOrganizationBySlug = (slug: string) => {
+    const trpc = useTRPC();
+    return useQuery(trpc.organization.getOrganizationBySlug.queryOptions(slug));
+};
 
 // Hook to update organization
 export const useUpdateOrganization = () => {
@@ -54,7 +51,7 @@ export const useUpdateOrganization = () => {
                 );
 
                 queryClient.invalidateQueries(
-                    trpc.organization.getOrganizationById.queryFilter(data.id),
+                    trpc.organization.getOrganizationBySlug.queryFilter(data.slug),
                 );
             },
             onError: (data) => toast.error(data.message)
@@ -76,11 +73,19 @@ export const useRemoveOrganization = () => {
                 );
 
                 queryClient.invalidateQueries(
-                    trpc.organization.getOrganizationById.queryFilter(data.id),
+                    trpc.organization.getOrganizationBySlug.queryFilter(data.slug),
                 );
             },
             onError: (data) => toast.error(data.message)
         })
     );
 };
+
+// Hook to get organization members 
+
+export const useSuspenseOrganizationMembers = () => {
+    const trpc = useTRPC();
+
+    return useSuspenseQuery(trpc.organization.getOrganizationMembers.queryOptions())
+} 
 

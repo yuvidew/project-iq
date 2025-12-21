@@ -127,33 +127,40 @@ export const organizationRouter = router({
 
 
         }),
-    getOrganizationById: protectedProcedure.input(
-        z.number()
-    ).query(async ({ input: orgId, ctx }) => {
-        const userId = ctx.auth.user.id;
+    getOrganizationBySlug: protectedProcedure
+        .input(z.string())
+        .query(async ({ input: slug, ctx }) => {
+            const userId = ctx.auth.user.id;
 
-
-
-        const membership = await prisma.organizationMember.findUnique({
-            where: {
-                userId_organizationId: {
-                    userId,
-                    organizationId: orgId,
-                },
-            },
-        });
-
-        if (!membership) {
-            throw new TRPCError({
-                code: "FORBIDDEN",
-                message: "You are not a member of this organization",
+            const organization = await prisma.organization.findUnique({
+                where: { slug },
             });
-        }
+            if (!organization) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Organization not found",
+                });
+            }
 
-        return prisma.organization.findUnique({
-            where: { id: orgId },
-        });
-    }),
+            const membership = await prisma.organizationMember.findUnique({
+                where: {
+                    userId_organizationId: {
+                        userId,
+                        organizationId: organization.id,
+                    },
+                },
+            });
+
+            if (!membership) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "You are not a member of this organization",
+                });
+            }
+
+            return organization;
+        }),
+
     updateOrganization: protectedProcedure.input(
         z.object({
             organizationId: z.number(),
@@ -222,4 +229,42 @@ export const organizationRouter = router({
         });
 
     }),
+    getOrganizationMembers: protectedProcedure.query(
+        async ({ ctx }) => {
+            const userId = ctx.auth.user.id;
+
+            const organizations = await prisma.organizationMember.findMany({
+                where: {
+                    userId,
+                },
+                select: {
+                    role: true,
+                    organization: {
+                        select: {
+                            id: true,
+                            name: true,
+                            slug: true,
+                            description: true,
+                            logoUrl: true,
+                            createdAt: true,
+                            _count: { select: { members: true } },
+                        },
+                    },
+                },
+                orderBy: {
+                    createdAt: "desc",
+                },
+            });
+
+            if (!organizations || organizations.length === 0) {
+                return [];
+            }
+
+            return organizations.map((item) => ({
+                ...item.organization,
+                role: item.role,
+                memberCount : item.organization._count,
+            }));
+        }
+    )
 });

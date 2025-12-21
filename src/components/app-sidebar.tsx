@@ -12,14 +12,8 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { SettingsIcon, UsersIcon, LogOutIcon, MoonIcon, SunIcon, FolderOpenIcon, LayersIcon, LayoutGridIcon } from "lucide-react";
+import { SettingsIcon, UsersIcon, LogOutIcon, MoonIcon, SunIcon, FolderOpenIcon, LayoutGridIcon } from "lucide-react";
 
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion"
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -28,6 +22,7 @@ import { useEffect, useState } from "react";
 import { Spinner } from "./ui/spinner";
 // import { useHasActiveSubscription } from "@/features/subscriptions/hooks/use-subscriptions"
 import { useTheme } from "next-themes";
+import { OrgSwitcher } from "./org-switcher";
 
 const menu_Items = [
     {
@@ -95,19 +90,7 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
     return (
         <Sidebar {...props} collapsible="icon" >
             <SidebarHeader>
-                <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip={"Nodebase"}
-                        className="gap-x-4 h-10 px-4 hover:bg-transparent">
-                        <Link href={"/"} prefetch>
-                            {/* <Button size={"icon"} > */}
-                            <LayersIcon className=" text-primary size-7" />
-                            {/* </Button> */}
-                            <span className='  text-lg font-semibold'>
-                                ProjectIQ
-                            </span>
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
+                <OrgSwitcher/>
             </SidebarHeader>
             <SidebarContent>
                 {menu_Items.map((group) => (

@@ -13,6 +13,6 @@ export const prefetchOrganizations = (params : inferInput<typeof trpc.organizati
  * Prefetch a single Organization
  */
 
-export const prefetchOrganization = (id : number) => {
-    return prefetch(trpc.organization.getOrganizationById.queryOptions(id));
+export const prefetchOrganization = (slug : string) => {
+    return prefetch(trpc.organization.getOrganizationBySlug.queryOptions(slug));
 }
