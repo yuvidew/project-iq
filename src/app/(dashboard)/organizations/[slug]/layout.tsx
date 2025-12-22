@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { requireAuth } from "@/lib/auth/require-auth";
+import { requireAuth } from "@/lib/auth-utils";
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppHeader } from '@/components/app-header';
@@ -10,7 +10,7 @@ export default async function DashboardLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    // await requireAuth();
+    await requireAuth();
 
     return (
         <SidebarProvider>

@@ -255,7 +255,7 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                         />
 
                         <div className="flex justify-end gap-2">
-                            <DialogClose>
+                            <DialogClose asChild>
                                 <Button type="button" variant="secondary">
                                     Cancel
                                 </Button>

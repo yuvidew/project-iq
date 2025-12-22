@@ -13,12 +13,7 @@ export const AppHeader = () => {
             </div>
 
             <div>
-
-            <UserInfo user={{
-                name: "shadcn",
-                email: "m@example.com",
-                avatar: "/avatars/shadcn.jpg",
-            }} />
+                <UserInfo/>
             </div>
         </header>
     )

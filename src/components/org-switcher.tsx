@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
     ChevronsUpDown,
     GalleryVerticalEndIcon,
@@ -23,20 +23,86 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar"
 import { Spinner } from "@/components/ui/spinner"
+import { useSwitchUserActiveOrg } from "@/features/user/hooks/use-user-info"
+import { usePathname } from "next/navigation"
 
-export function OrgSwitcher() {
+interface Props {
+    onOpenDialog : () => void
+}
+
+export const OrgSwitcher = ({onOpenDialog} : Props) => {
     const { isMobile } = useSidebar()
-    const { data: organizations = [], isFetching } = useSuspenseOrganizationMembers()
+    const pathname = usePathname()
+    const {
+        data: organizations = [],
+        isFetching,
+        isLoading,
+        isError,
+        error,
+        refetch,
+    } = useSuspenseOrganizationMembers();
+    const { mutate: onSwitchOrg, isPending } = useSwitchUserActiveOrg();
     const [open, setOpen] = useState(false)
     const [activeId, setActiveId] = useState<number | null>(null)
+    const isBusy = isFetching || isPending
+
+    const slugFromPath = useMemo(() => {
+        const match = pathname.match(/\/organizations\/([^/?]+)/)
+        return match?.[1]
+    }, [pathname])
 
     useEffect(() => {
-        if (organizations.length > 0 && (activeId === null || !organizations.some((org) => org.id === activeId))) {
+        if (organizations.length === 0) return
+
+        const matchedOrg = slugFromPath
+            ? organizations.find((org) => org.slug === slugFromPath)
+            : null
+
+        if (matchedOrg && matchedOrg.id !== activeId) {
+            setActiveId(matchedOrg.id)
+            return
+        }
+
+        if (activeId === null || !organizations.some((org) => org.id === activeId)) {
             setActiveId(organizations[0].id)
         }
-    }, [organizations, activeId])
+    }, [organizations, activeId, slugFromPath])
 
     const activeOrg = organizations.find((org) => org.id === activeId)
+
+    if (isLoading) {
+        return (
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton size="lg" disabled className="gap-2">
+                        <Spinner className="size-4" />
+                        <span className="text-sm">Loading organizations…</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+        )
+    }
+
+    if (isError) {
+        const isUnauthorized = (error as { data?: { code?: string } } | null)?.data?.code === "UNAUTHORIZED"
+        return (
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        size="lg"
+                        className="gap-2 text-destructive"
+                        disabled={isUnauthorized}
+                        onClick={() => refetch()}
+                    >
+                        <GalleryVerticalEndIcon className="size-4" />
+                        <span className="text-sm">
+                            {isUnauthorized ? "Please sign in" : "Failed to load organizations"}
+                        </span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+        )
+    }
 
     if (!activeOrg) return null
 
@@ -44,19 +110,19 @@ export function OrgSwitcher() {
         <SidebarMenu>
             <SidebarMenuItem>
                 <DropdownMenu
-                    open={isFetching ? false : open}
+                    open={isBusy ? false : open}
                     onOpenChange={(next) => {
-                        if (!isFetching) setOpen(next)
+                        if (!isBusy) setOpen(next)
                     }}
                 >
                     <DropdownMenuTrigger asChild>
                         <SidebarMenuButton
                             size="lg"
-                            disabled={isFetching}
+                            disabled={isBusy}
                             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                         >
                             <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                                {isFetching ? (
+                                {isBusy ? (
                                     <Spinner className="size-4" />
                                 ) : (
                                     <GalleryVerticalEndIcon className="size-4" />
@@ -76,14 +142,25 @@ export function OrgSwitcher() {
                         sideOffset={4}
                     >
                         <DropdownMenuLabel className="text-muted-foreground text-xs">Organizations</DropdownMenuLabel>
-                        {organizations.map((org, index) => (
+                        {organizations.map((org) => (
                             <DropdownMenuItem
                                 key={org.id}
-                                onClick={() => setActiveId(org.id)}
+                                onClick={() => {
+                                    if (isPending || org.id === activeId) return
+                                    onSwitchOrg(
+                                        { orgId: org.id },
+                                        { onSuccess: () => setActiveId(org.id) },
+                                    )
+                                }}
                                 className="gap-2 p-2"
+                                disabled={isPending}
                             >
                                 <div className="flex size-6 items-center justify-center rounded-md border">
-                                    <GalleryVerticalEndIcon className="size-3.5 shrink-0" />
+                                    {isPending && org.id === activeId ? (
+                                        <Spinner className="size-3.5" />
+                                    ) : (
+                                        <GalleryVerticalEndIcon className="size-3.5 shrink-0" />
+                                    )}
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="truncate">{org.name}</span>
@@ -95,7 +172,7 @@ export function OrgSwitcher() {
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="gap-2 p-2">
+                        <DropdownMenuItem className="gap-2 p-2" onClick={onOpenDialog}>
                             <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                                 <Plus className="size-4" />
                             </div>

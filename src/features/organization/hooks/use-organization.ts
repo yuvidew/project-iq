@@ -86,6 +86,9 @@ export const useRemoveOrganization = () => {
 export const useSuspenseOrganizationMembers = () => {
     const trpc = useTRPC();
 
-    return useSuspenseQuery(trpc.organization.getOrganizationMembers.queryOptions())
+    return useQuery({
+        ...trpc.organization.getOrganizationMembers.queryOptions(),
+        retry: false,
+    });
 } 
 

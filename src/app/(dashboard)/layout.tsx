@@ -1,4 +1,5 @@
 import React from 'react'
+import { requireAuth } from "@/lib/auth-utils";
 
 
 export default async function DashboardLayout({
@@ -6,7 +7,7 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-    // await requireAuth();
+    await requireAuth();
 
     return (
       <main>
