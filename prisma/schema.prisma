@@ -134,6 +134,62 @@ model OrganizationMember {
   @@map("organization_member")
 }
 
+
+// ==============================
+// Project Models
+// ==============================
+
+model Project {
+  id             String   @id @default(cuid())
+
+  // Basic info
+  name           String
+  description    String?
+
+  // Status & priority
+  status         ProjectStatus   @default(PLANNING)
+  priority       ProjectPriority @default(MEDIUM)
+
+  // Dates
+  startDate      DateTime?
+  endDate        DateTime?
+
+  // Relations
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  projectLeadId  String?
+  projectLead    User? @relation("ProjectLead", fields: [projectLeadId], references: [id])
+
+  members        ProjectMember[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@map("project")
+}
+
+model ProjectMember {
+  id        Int    @id @default(autoincrement())
+
+  projectId String
+  userId    String
+
+  role      ProjectMemberRole @default(MEMBER)
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt  DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([userId])
+  @@map("project_member")
+}
+
+
+
 // ==============================
 // Enums
 // ==============================
@@ -143,3 +199,23 @@ enum OrganizationRole {
   ADMIN
   MEMBER
 }
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  BLOCKED
+  COMPLETED
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ProjectMemberRole {
+  LEAD
+  MEMBER
+}
+
