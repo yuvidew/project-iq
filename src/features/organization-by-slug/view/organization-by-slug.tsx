@@ -1,12 +1,16 @@
-import React from 'react';
 import { CreateNewProject } from '../_components/create-new-project';
-import { AlertTriangleIcon, CheckCircle2Icon, FolderOpenIcon, UsersIcon } from 'lucide-react';
+import { AlertTriangleIcon,  CheckCircle2Icon, FolderOpenIcon, UsersIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { InProgress, MyTask, Overdue, ProjectOverview, RecentActivityTask } from '../_components/organization-by-slug';
+
+
+
+
 
 export const OrganizationBySlug = () => {
 
     return (
-        <main className='p-6 flex flex-col gap-9'>
+        <main className='p-6 flex flex-col gap-9 '>
             {/* start to create new project section  */}
             <section className=' flex items-start justify-between'>
                 <div className='flex flex-col gap-2'>
@@ -34,7 +38,7 @@ export const OrganizationBySlug = () => {
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-4xl font-bold text-white">
+                            <p className="text-4xl font-bold ">
                                 0
                             </p>
                             <p className="text-gray-500 text-xs">
@@ -57,7 +61,7 @@ export const OrganizationBySlug = () => {
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-4xl font-bold text-white">
+                            <p className="text-4xl font-bold ">
                                 0
                             </p>
                             <p className="text-gray-500 text-xs">
@@ -80,7 +84,7 @@ export const OrganizationBySlug = () => {
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-4xl font-bold text-white">
+                            <p className="text-4xl font-bold ">
                                 0
                             </p>
                             <p className="text-gray-500 text-xs">
@@ -103,7 +107,7 @@ export const OrganizationBySlug = () => {
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-4xl font-bold text-white">
+                            <p className="text-4xl font-bold ">
                                 0
                             </p>
                             <p className="text-gray-500 text-xs">
@@ -114,9 +118,21 @@ export const OrganizationBySlug = () => {
                 </Card>
             </section>
             {/* start to progress card */}
-            
+
             {/* start to  next section*/}
-            
+            <div className=' grid grid-cols-3 gap-5'>
+                {/* start to project overview and recent project */}
+                <div className=' col-span-2 flex flex-col gap-5'>
+                    <ProjectOverview/>
+                    <RecentActivityTask/>
+                </div>
+                {/* end to project overview and recent project */}
+                <div className='flex flex-col gap-5'>
+                    <MyTask/>
+                    <Overdue/>
+                    <InProgress/>
+                </div>
+            </div>
             {/* end to  next section*/}
         </main>
     )

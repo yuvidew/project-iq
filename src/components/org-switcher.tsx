@@ -25,13 +25,14 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { useSwitchUserActiveOrg } from "@/features/user/hooks/use-user-info"
 import { usePathname } from "next/navigation"
+import Image from "next/image"
 
 interface Props {
-    onOpenDialog : () => void
+    onOpenDialog: () => void
 }
 
-export const OrgSwitcher = ({onOpenDialog} : Props) => {
-    const { isMobile } = useSidebar()
+export const OrgSwitcher = ({ onOpenDialog }: Props) => {
+    const { isMobile, state } = useSidebar()
     const pathname = usePathname()
     const {
         data: organizations = [],
@@ -44,7 +45,9 @@ export const OrgSwitcher = ({onOpenDialog} : Props) => {
     const { mutate: onSwitchOrg, isPending } = useSwitchUserActiveOrg();
     const [open, setOpen] = useState(false)
     const [activeId, setActiveId] = useState<number | null>(null)
+    const [pendingOrgId, setPendingOrgId] = useState<number | null>(null)
     const isBusy = isFetching || isPending
+    const isCollapsed = state === "collapsed"
 
     const slugFromPath = useMemo(() => {
         const match = pathname.match(/\/organizations\/([^/?]+)/)
@@ -119,20 +122,35 @@ export const OrgSwitcher = ({onOpenDialog} : Props) => {
                         <SidebarMenuButton
                             size="lg"
                             disabled={isBusy}
-                            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                            tooltip={
+                                isCollapsed
+                                    ? `${activeOrg.name}${activeOrg.slug ? ` (${activeOrg.slug})` : ""}`
+                                    : undefined
+                            }
+                            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:justify-center"
                         >
-                            <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                            <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden">
                                 {isBusy ? (
                                     <Spinner className="size-4" />
                                 ) : (
-                                    <GalleryVerticalEndIcon className="size-4" />
+                                    <Image
+                                        src={activeOrg.logoUrl as string}
+                                        alt={activeOrg.slug}
+                                        width={500}
+                                        height={500}
+                                        className=" w-full h-full object-cover"
+                                    />
                                 )}
                             </div>
-                            <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-medium">{activeOrg.name}</span>
-                                <span className="truncate text-xs text-muted-foreground">{activeOrg.slug}</span>
-                            </div>
-                            <ChevronsUpDown className="ml-auto" />
+                            {!isCollapsed && (
+                                <>
+                                    <div className="grid flex-1 text-left text-sm leading-tight">
+                                        <span className="truncate font-medium">{activeOrg.name}</span>
+                                        <span className="truncate text-xs text-muted-foreground">{activeOrg.slug}</span>
+                                    </div>
+                                    <ChevronsUpDown className="ml-auto" />
+                                </>
+                            )}
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -147,19 +165,29 @@ export const OrgSwitcher = ({onOpenDialog} : Props) => {
                                 key={org.id}
                                 onClick={() => {
                                     if (isPending || org.id === activeId) return
+                                    setPendingOrgId(org.id)
                                     onSwitchOrg(
                                         { orgId: org.id },
-                                        { onSuccess: () => setActiveId(org.id) },
+                                        {
+                                            onSuccess: () => setActiveId(org.id),
+                                            onSettled: () => setPendingOrgId(null),
+                                        },
                                     )
                                 }}
                                 className="gap-2 p-2"
                                 disabled={isPending}
                             >
-                                <div className="flex size-6 items-center justify-center rounded-md border">
-                                    {isPending && org.id === activeId ? (
+                                <div className="flex size-6 items-center justify-center overflow-hidden rounded-md border">
+                                    {isPending && (pendingOrgId ? org.id === pendingOrgId : org.id === activeId) ? (
                                         <Spinner className="size-3.5" />
                                     ) : (
-                                        <GalleryVerticalEndIcon className="size-3.5 shrink-0" />
+                                        <Image
+                                            src={org.logoUrl as string}
+                                            alt={org.slug}
+                                            width={500}
+                                            height={500}
+                                            className=" w-full h-full object-cover"
+                                        />
                                     )}
                                 </div>
                                 <div className="flex flex-col">
