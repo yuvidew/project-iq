@@ -18,12 +18,18 @@ import {
 import { useSidebar } from "@/components/ui/sidebar"
 import { useUserDetails } from "@/features/user/hooks/use-user-info"
 import { Spinner } from "@/components/ui/spinner"
-import { BellDotIcon, CircleUserRoundIcon, CreditCardIcon, LogOutIcon } from "lucide-react"
+import {  CircleUserRoundIcon, CreditCardIcon, LogOutIcon } from "lucide-react";
+import { authClient } from "@/lib/auth-client"
+import { useRouter } from "next/navigation"
+
+
 
 export const UserInfo = () => {
-    const { isMobile } = useSidebar()
-    const { data, isFetching } = useUserDetails()
-    const [open, setOpen] = useState(false)
+    const router = useRouter();
+    const { isMobile } = useSidebar();
+    const { data, isFetching } = useUserDetails();
+    const [open, setOpen] = useState(false);
+    const [isSignOutLoading, setIsSignOutLoading] = useState(false)
 
     const displayName = data?.name ?? "User"
     const displayEmail = data?.email ?? ""
@@ -34,7 +40,25 @@ export const UserInfo = () => {
         .map((part) => part[0])
         .join("")
         .slice(0, 2)
-        .toUpperCase()
+        .toUpperCase();
+
+    const onSignOut = async () => {
+            setIsSignOutLoading(true)
+            try {
+    
+                await authClient.signOut({
+                    fetchOptions: {
+                        onSuccess: () => {
+                            router.replace("/sign-in")
+                        }
+                    }
+                })
+            } catch {
+                setIsSignOutLoading(false)
+            } finally {
+                setIsSignOutLoading(false)
+            }
+        }
 
     return (
         <DropdownMenu
@@ -90,20 +114,11 @@ export const UserInfo = () => {
                         <CircleUserRoundIcon />
                         Account
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                        <CreditCardIcon />
-                        Billing
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                        <BellDotIcon />
-                        Notifications
-                    </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                    <LogOutIcon />
+                    {isSignOutLoading ? <Spinner className="text-primary" /> : <LogOutIcon className=" size-4" />}
                     Log out
                 </DropdownMenuItem>
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     )

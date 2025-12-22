@@ -269,7 +269,7 @@ export const CreateOrganizationForm = ({ open, setOpen, initialData }: Props) =>
                         <div className="flex items-center justify-end gap-2">
                             <DialogClose asChild>
                                 <Button
-                                    disabled={isSubmitting || !isAllFieldsFilled}
+                                    disabled={isSubmitting}
                                     type="button"
                                     variant="secondary"
                                 >

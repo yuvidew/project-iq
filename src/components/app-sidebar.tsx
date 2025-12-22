@@ -23,6 +23,8 @@ import { Spinner } from "./ui/spinner";
 // import { useHasActiveSubscription } from "@/features/subscriptions/hooks/use-subscriptions"
 import { useTheme } from "next-themes";
 import { OrgSwitcher } from "./org-switcher";
+import { CreateOrganizationForm } from "@/features/organization/_components/create-organization-form";
+import { authClient } from "@/lib/auth-client";
 
 const menu_Items = [
     {
@@ -53,7 +55,7 @@ const menu_Items = [
 ]
 
 export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
-    // const { hasActiveSubscription, isLoading } = useHasActiveSubscription()
+    const [ open , setOpen] = useState(false)
     const [isSignOutLoading, setIsSignOutLoading] = useState(false)
     const { setTheme, theme, resolvedTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
@@ -70,90 +72,94 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
     const themeLabel = mounted ? effectiveTheme : "theme"
 
     const onSignOut = async () => {
-        // setIsSignOutLoading(true)
-        // try {
+        setIsSignOutLoading(true)
+        try {
 
-        //     await authClient.signOut({
-        //         fetchOptions: {
-        //             onSuccess: () => {
-        //                 router.replace("/sign-in")
-        //             }
-        //         }
-        //     })
-        // } catch {
-        //     setIsSignOutLoading(false)
-        // } finally {
-        //     setIsSignOutLoading(false)
-        // }
+            await authClient.signOut({
+                fetchOptions: {
+                    onSuccess: () => {
+                        router.replace("/sign-in")
+                    }
+                }
+            })
+        } catch {
+            setIsSignOutLoading(false)
+        } finally {
+            setIsSignOutLoading(false)
+        }
     }
 
     return (
-        <Sidebar {...props} collapsible="icon" >
-            <SidebarHeader>
-                <OrgSwitcher/>
-            </SidebarHeader>
-            <SidebarContent>
-                {menu_Items.map((group) => (
-                    <SidebarGroup key={group.title}>
-                        <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                {group.items.map(({ title, icon: Icon, url }) => (
-                                    <SidebarMenuItem key={title}>
-                                        <SidebarMenuButton
-                                            isActive={
-                                                url === "/"
-                                                    ? pathname === "/"
-                                                    : pathname.startsWith(url)
-                                            }
-                                            tooltip={title}
-                                            asChild
-                                            className="gap-x-4 h-10 px-4"
-                                        >
-                                            <Link href={url} prefetch>
-                                                {Icon && <Icon className="w-4 h-4" />}
-                                                {title}
-                                            </Link>
-                                            {/* </a> */}
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
+        <>
+            <Sidebar {...props} collapsible="icon" >
+                <SidebarHeader>
+                    <OrgSwitcher onOpenDialog = {() => setOpen(true)}/>
+                </SidebarHeader>
+                <SidebarContent>
+                    {menu_Items.map((group) => (
+                        <SidebarGroup key={group.title}>
+                            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+                            <SidebarGroupContent>
+                                <SidebarMenu>
+                                    {group.items.map(({ title, icon: Icon, url }) => (
+                                        <SidebarMenuItem key={title}>
+                                            <SidebarMenuButton
+                                                isActive={
+                                                    url === "/"
+                                                        ? pathname === "/"
+                                                        : pathname.startsWith(url)
+                                                }
+                                                tooltip={title}
+                                                asChild
+                                                className="gap-x-4 h-10 px-4"
+                                            >
+                                                <Link href={url} prefetch>
+                                                    {Icon && <Icon className="w-4 h-4" />}
+                                                    {title}
+                                                </Link>
+                                                {/* </a> */}
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                    ))}
+
+                    <SidebarGroup>
+                        <SidebarGroupLabel>My Tasks 0</SidebarGroupLabel>
                     </SidebarGroup>
-                ))}
+                </SidebarContent>
+                <SidebarFooter>
 
-                <SidebarGroup>
-                    <SidebarGroupLabel>My Tasks 0</SidebarGroupLabel>
-                </SidebarGroup>
-            </SidebarContent>
-            <SidebarFooter>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            tooltip={themeTooltip}
+                            className="gap-x-4 h-10 px-4"
+                            onClick={() => setTheme(effectiveTheme === "light" ? "dark" : "light")}
+                        >
+                            <>
+                                <SunIcon className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+                                <MoonIcon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+                            </>
+                            <span className=" capitalize">{themeLabel}</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
 
-                <SidebarMenuItem>
-                    <SidebarMenuButton
-                        tooltip={themeTooltip}
-                        className="gap-x-4 h-10 px-4"
-                        onClick={() => setTheme(effectiveTheme === "light" ? "dark" : "light")}
-                    >
-                        <>
-                            <SunIcon className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-                            <MoonIcon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-                        </>
-                        <span className=" capitalize">{themeLabel}</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            tooltip={"Sign out"}
+                            className="gap-x-4 h-10 px-4"
+                            onClick={onSignOut}
+                        >
+                            {isSignOutLoading ? <Spinner className="text-primary" /> : <LogOutIcon className=" size-4" />}
+                            <span>Sign out</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarFooter>
+            </Sidebar>
 
-                <SidebarMenuItem>
-                    <SidebarMenuButton
-                        tooltip={"Sign out"}
-                        className="gap-x-4 h-10 px-4"
-                        onClick={onSignOut}
-                    >
-                        {isSignOutLoading ? <Spinner className="text-primary" /> : <LogOutIcon className=" size-4" />}
-                        <span>Sign out</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarFooter>
-        </Sidebar>
+            <CreateOrganizationForm open = {open} setOpen={setOpen} />
+        </>
     )
 }

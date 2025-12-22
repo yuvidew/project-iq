@@ -3,7 +3,7 @@ import { CreateNewProject } from '../_components/create-new-project';
 import { AlertTriangleIcon, CheckCircle2Icon, FolderOpenIcon, UsersIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
-export const OrganizationIdView = () => {
+export const OrganizationBySlug = () => {
 
     return (
         <main className='p-6 flex flex-col gap-9'>
