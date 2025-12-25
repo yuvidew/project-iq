@@ -32,7 +32,7 @@ const menu_Items = [
         items: [
             {
                 title: "Dashboard",
-                url: "/dashboard",
+                url: "/organizations",
                 icon: LayoutGridIcon
             },
             {
@@ -105,9 +105,8 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
                                         <SidebarMenuItem key={title}>
                                             <SidebarMenuButton
                                                 isActive={
-                                                    url === "/"
-                                                        ? pathname === "/"
-                                                        : pathname.startsWith(url)
+                                                    pathname === url ||
+                                                    pathname.startsWith(`${url}/`)
                                                 }
                                                 tooltip={title}
                                                 asChild

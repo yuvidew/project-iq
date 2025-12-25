@@ -1,5 +1,6 @@
+
+
 import { SearchIcon } from 'lucide-react';
-import React from 'react'
 import { Input } from './ui/input';
 
 
@@ -25,13 +26,13 @@ export const SearchBox = ({
     placeholder = "search"
 } : Props) => {
     return (
-        <div className=' relative ml-auto'>
+        <div className=' relative '>
             <SearchIcon className=' size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground' />
             <Input
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => onChange?.(e.target.value)}
-                className=' pl-8 max-w-[200px] bg-background shadow-none border-border ' 
+                className=' pl-8 w-[300px] bg-background shadow-none border-border ' 
             />
         </div>
     )

@@ -203,8 +203,9 @@ enum OrganizationRole {
 enum ProjectStatus {
   PLANNING
   IN_PROGRESS
-  BLOCKED
+  ON_HOLD
   COMPLETED
+  ACTIVE
 }
 
 enum ProjectPriority {

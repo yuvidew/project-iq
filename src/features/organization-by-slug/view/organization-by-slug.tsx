@@ -1,4 +1,4 @@
-import { CreateNewProject } from '../_components/create-new-project';
+import { CreateNewProject } from '../../../components/create-new-project';
 import { AlertTriangleIcon,  CheckCircle2Icon, FolderOpenIcon, UsersIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { InProgress, MyTask, Overdue, ProjectOverview, RecentActivityTask } from '../_components/organization-by-slug';
@@ -15,7 +15,7 @@ export const OrganizationBySlug = () => {
             <section className=' flex items-start justify-between'>
                 <div className='flex flex-col gap-2'>
                     <h1 className=' text-3xl font-semibold'>Welcome back, <span className=' text-primary'>yuvi</span></h1>
-                    <p className=' text-sm '>Here's what's happening with your projects today</p>
+                    <p className=' text-sm text-muted-foreground'>Here's what's happening with your projects today</p>
                 </div>
 
                 <CreateNewProject />
@@ -120,9 +120,9 @@ export const OrganizationBySlug = () => {
             {/* start to progress card */}
 
             {/* start to  next section*/}
-            <div className=' grid grid-cols-3 gap-5'>
+            <div className=' grid lg:grid-cols-3 grid-cols-1 gap-5'>
                 {/* start to project overview and recent project */}
-                <div className=' col-span-2 flex flex-col gap-5'>
+                <div className=' lg:col-span-2 flex flex-col gap-5'>
                     <ProjectOverview/>
                     <RecentActivityTask/>
                 </div>

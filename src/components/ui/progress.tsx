@@ -5,11 +5,38 @@ import * as ProgressPrimitive from "@radix-ui/react-progress"
 
 import { cn } from "@/lib/utils"
 
-function Progress({
-  className,
-  value,
-  ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root>) {
+type BadgeStatus = "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "ACTIVE"
+
+const statusStyles: Record<BadgeStatus, { label: string; className: string }> = {
+  PLANNING: {
+    label: "Planning",
+    className: "bg-amber-100 text-amber-800",
+  },
+  IN_PROGRESS: {
+    label: "In Progress",
+    className: "bg-blue-100 text-blue-800",
+  },
+  ON_HOLD: {
+    label: "On Hold",
+    className: "bg-slate-100 text-slate-800",
+  },
+  COMPLETED: {
+    label: "Completed",
+    className: "bg-emerald-100 text-emerald-800",
+  },
+  ACTIVE: {
+    label: "Active",
+    className: "bg-green-100 text-green-800",
+  },
+}
+
+type ProgressProps = React.ComponentProps<typeof ProgressPrimitive.Root> & {
+  status?: BadgeStatus
+}
+
+function Progress({ className, value, status = "ACTIVE", ...props }: ProgressProps) {
+  const statusClassName = statusStyles[status].className
+
   return (
     <ProgressPrimitive.Root
       data-slot="progress"
@@ -21,7 +48,7 @@ function Progress({
     >
       <ProgressPrimitive.Indicator
         data-slot="progress-indicator"
-        className="bg-primary h-full w-full flex-1 transition-all"
+        className={cn("h-full w-full flex-1 transition-all", statusClassName)}
         style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
       />
     </ProgressPrimitive.Root>
