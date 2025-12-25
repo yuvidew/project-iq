@@ -32,6 +32,7 @@ import { PlusIcon } from "lucide-react";
 import z from "zod";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
+import { MultipleSelect } from "@/components/ui/multiple-select";
 
 const NewProjectSchema = z.object({
     project_name: z.string().min(6, { message: "Project name must be 6 characters long" }),
@@ -41,7 +42,7 @@ const NewProjectSchema = z.object({
     state_date: z.date().optional(),
     end_date: z.date().optional(),
     project_lead: z.string(),
-    team_members: z.string()
+    team_members: z.array(z.string())
 });
 
 type NewProjectValue = z.infer<typeof NewProjectSchema>;
@@ -60,7 +61,7 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
             priority: "medium",
             state_date: undefined,
             end_date: undefined,
-            team_members: "",
+            team_members: [],
             project_lead: "No lead"
 
         }
@@ -236,19 +237,20 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Team members</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Select team" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="Design">Design</SelectItem>
-                                            <SelectItem value="Engineering">Engineering</SelectItem>
-                                            <SelectItem value="QA">QA</SelectItem>
-                                            <SelectItem value="Marketing">Marketing</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <FormControl>
+                                        <MultipleSelect
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            options={[
+                                                { label: "Design", value: "Design" },
+                                                { label: "Engineering", value: "Engineering" },
+                                                { label: "QA", value: "QA" },
+                                                { label: "Marketing", value: "Marketing" },
+                                            ]}
+                                            placeholder="Select team"
+                                            className="w-full"
+                                        />
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
