@@ -32,6 +32,8 @@ model User {
   accounts            Account[]
   memberships         OrganizationMember[]
   ownedOrganizations  Organization[] @relation("OrganizationOwner")
+  projectMemberships  ProjectMember[]
+  projectLeadProjects Project[] @relation("ProjectLead")
 
   @@map("user")
 }
@@ -113,6 +115,7 @@ model Organization {
   lastActiveUsers User[] @relation("LastActiveOrganization")
 
   members     OrganizationMember[]
+  projects    Project[]
 
   @@map("organization")
 }
