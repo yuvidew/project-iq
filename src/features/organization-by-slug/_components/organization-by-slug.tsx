@@ -5,7 +5,7 @@ import { LoadingView } from "@/components/loading-view";
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ArrowRightIcon, Clock10Icon, FolderOpenIcon, HistoryIcon, TriangleAlertIcon, User2Icon } from "lucide-react";
-import { CreateNewProject } from "./create-new-project";
+import { CreateNewProject } from "../../../components/create-new-project";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
