@@ -1,3 +1,5 @@
+"use client"
+
 import { useParams } from "next/navigation"
 import { useTRPC } from "@/trpc/trpc-client-provider";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";

@@ -7,7 +7,7 @@ import { Input } from './ui/input';
 interface Props {
     value? : string;
     onChange? : (value : string) => void;
-    placeholder? : string
+    placeholder? : string;
 }
 
 /**
@@ -32,7 +32,7 @@ export const SearchBox = ({
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => onChange?.(e.target.value)}
-                className=' pl-8 w-[300px] bg-background shadow-none border-border ' 
+                className=' pl-8 lg:w-[300px] md:w-[170px] w-[170px] bg-background shadow-none border-border ' 
             />
         </div>
     )

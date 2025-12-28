@@ -108,6 +108,7 @@ export const ProjectOverview = () => {
                         <EmptyProject />
                     ) : data.projects.map(({ id, name, description, status, priority, _count , endDate}) => (
                         <ProjectCard 
+                            id = {id}
                             key={id} 
                             name={name} 
                             description={description} 
@@ -115,6 +116,7 @@ export const ProjectOverview = () => {
                             priority={priority}
                             members={_count.members}
                             endDate = {endDate}
+                            
                         />
                     ))}
                 </div>

@@ -64,10 +64,10 @@ const isInfiniteQueryOptions = (
 export function prefetch(queryOptions: TRPCPrefetchOptions) {
     const queryClient = getQueryClient();
     if (isInfiniteQueryOptions(queryOptions)) {
-        void queryClient.prefetchInfiniteQuery(queryOptions);
-    } else {
-        void queryClient.prefetchQuery(queryOptions);
+        return queryClient.prefetchInfiniteQuery(queryOptions);
     }
+
+    return queryClient.prefetchQuery(queryOptions);
 }
 
 export function HydrateClient(props: { children: React.ReactNode }) {

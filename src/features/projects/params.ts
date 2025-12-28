@@ -5,6 +5,7 @@ import { parseAsInteger, parseAsString, parseAsStringEnum } from "nuqs/server";
 const projectStatusValues = Object.values(ProjectStatus) as ProjectStatus[];
 const projectPriorityValues = Object.values(ProjectPriority) as ProjectPriority[];
 
+
 export const projectParams = {
     page : parseAsInteger
         .withDefault(PAGINATION.DEFAULT_PAGE)

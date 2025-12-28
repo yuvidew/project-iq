@@ -39,12 +39,14 @@ const checkPriority = (priority: ProjectPriority) =>
     priorityStyles[priority] ?? { label: "Unknown", className: "bg-slate-50 text-slate-700 border-slate-200" };
 
 interface Props {
+    id : string;
     name : string;
     description? : string | null;
     status  : ProjectStatus;
     priority : ProjectPriority;
     members? : number;
     endDate? : Date | null;
+    classname? : string 
 };
 
 /**
@@ -62,19 +64,21 @@ interface Props {
  * />
  */
 export const ProjectCard = ({
+    id,
     name,
     description,
     status,
     priority,
     members,
-    endDate
+    endDate,
+    classname = ""
 }: Props) => {
     const {slug} = useParams()
     const { label } = checkPriority(priority);
 
     return (
-        <Link href={`/organizations/${slug}/projects`} prefetch>
-            <Card className=" rounded-sm h-56 border-none  shadow-none hover:bg-transparent">
+        <Link href={`/organizations/${slug}/projects/${id}`} prefetch>
+            <Card className={` rounded-sm h-56 border-none  shadow-none ${classname}`}>
                 <CardHeader>
                     <CardTitle className=" font-semibold">
                         {name}
