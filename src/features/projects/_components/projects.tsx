@@ -124,7 +124,7 @@ export const FilterSection = () => {
                 value={params.status ?? "ALL"}
                 onValueChange={(val) => onUpdateFilter("status", val as ProjectsParams["status"] | "ALL")}
             >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="lg:w-[180px] w-[140px]">
                     <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -142,7 +142,7 @@ export const FilterSection = () => {
                 value={params.priority ?? "ALL"}
                 onValueChange={(val) => onUpdateFilter("priority", val as ProjectsParams["priority"] | "ALL")}
             >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="lg:w-[180px] w-[140px]">
                     <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
