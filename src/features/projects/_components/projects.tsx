@@ -33,6 +33,16 @@ import { PackageOpenIcon, PlusIcon } from "lucide-react";
 import { BadgeText } from "@/components/ui/badge-text";
 import { Progress } from "@/components/ui/progress";
 import { Pagination } from "@/components/ui/pagination";
+import { ErrorView } from "@/components/error-view";
+import { LoadingView } from "@/components/loading-view";
+
+export const ProjectErrorView = () => {
+    return <ErrorView message='Error loading projects' />
+};
+
+export const ProjectLoadingView = () => {
+    return <LoadingView message='Loading projects...' />
+};
 
 export const ProjectsSearch = () => {
     return (
@@ -152,6 +162,7 @@ export const ProjectCard = () => {
 }
 
 export const ProjectLists = () => {
+    
     return (
         <section className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5 h-full">
             <ProjectCard />

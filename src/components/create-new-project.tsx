@@ -33,12 +33,19 @@ import z from "zod";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { MultipleSelect } from "@/components/ui/multiple-select";
+import { useCreateProject } from "@/features/projects/hooks/use-projects";
+import { useParams } from "next/navigation";
+import { toast } from "sonner";
+import { ProjectPriority, ProjectStatus } from "@/generated/prisma";
+import { Spinner } from "./ui/spinner";
+import { useOrgMembers } from "@/features/organization-members/hooks/use-organization-members";
+import { useState } from "react";
 
 const NewProjectSchema = z.object({
     project_name: z.string().min(6, { message: "Project name must be 6 characters long" }),
     project_description: z.string().optional(),
-    status: z.string(),
-    priority: z.string(),
+    status: z.nativeEnum(ProjectStatus),
+    priority: z.nativeEnum(ProjectPriority),
     state_date: z.date().optional(),
     end_date: z.date().optional(),
     project_lead: z.string(),
@@ -48,31 +55,60 @@ const NewProjectSchema = z.object({
 type NewProjectValue = z.infer<typeof NewProjectSchema>;
 
 interface Props  {
-    title? : string 
+    title? : string;
+    organizationSlug?: string;
 }
 
 export const CreateNewProject = ({title = "New Project"} : Props) => {
+    const {mutate: onCreateProject , isPending} = useCreateProject();
+    const {data: membersList, isLoading} = useOrgMembers();
+
+    const [open , setOpen] = useState(false)
+    const {slug} = useParams();
     const form = useForm<NewProjectValue>({
         resolver: zodResolver(NewProjectSchema),
         defaultValues: {
             project_name: "",
             project_description: "",
-            status: "planning",
-            priority: "medium",
+            status: ProjectStatus.PLANNING,
+            priority: ProjectPriority.MEDIUM,
             state_date: undefined,
             end_date: undefined,
             team_members: [],
             project_lead: "No lead"
-
         }
-    })
+    });
+
 
     const onSubmit = (values: NewProjectValue) => {
-        console.log(values)
+        if (!slug) {
+            toast.error("Select an organization before creating a project.");
+            return;
+        }
+
+        onCreateProject(
+            {
+                name : values.project_name,
+                description : values.project_description,
+                status : values.status ,
+                priority : values.priority ,
+                startDate : values.state_date,
+                endDate : values.end_date,
+                members : values.team_members,
+                projectLeadEmail : values.project_lead,
+                organizationSlug: slug as string,
+            },
+            {
+                onSuccess : () => {
+                    form.reset();
+                    setOpen(false);
+                }
+            }
+        )
     }
 
     return (
-        <Dialog>
+        <Dialog open = {open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant={"default"}>
                     <PlusIcon />
@@ -131,10 +167,10 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="planning">Planning</SelectItem>
-                                                <SelectItem value="in_progress">In progress</SelectItem>
-                                                <SelectItem value="blocked">Blocked</SelectItem>
-                                                <SelectItem value="completed">Completed</SelectItem>
+                                                <SelectItem value="PLANNING">Planning</SelectItem>
+                                                <SelectItem value="IN_PROGRESS">In progress</SelectItem>
+                                                <SelectItem value="BLOCKED">Blocked</SelectItem>
+                                                <SelectItem value="COMPLETED">Completed</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -155,10 +191,10 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="low">Low</SelectItem>
-                                                <SelectItem value="medium">Medium</SelectItem>
-                                                <SelectItem value="high">High</SelectItem>
-                                                <SelectItem value="urgent">Urgent</SelectItem>
+                                                <SelectItem value="LOW">Low</SelectItem>
+                                                <SelectItem value="MEDIUM">Medium</SelectItem>
+                                                <SelectItem value="HIGH">High</SelectItem>
+                                                <SelectItem value="URGENT">Urgent</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -219,11 +255,16 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                                                 <SelectValue placeholder="Select lead" />
                                             </SelectTrigger>
                                         </FormControl>
+
                                         <SelectContent>
                                             <SelectItem value="No lead">No lead</SelectItem>
-                                            <SelectItem value="Yuvi">Yuvi</SelectItem>
-                                            <SelectItem value="Aisha">Aisha</SelectItem>
-                                            <SelectItem value="Rohan">Rohan</SelectItem>
+                                            {isLoading ? (
+                                                <SelectItem value="No lead">
+                                                    <Spinner className="text-muted-foreground" />
+                                                </SelectItem>
+                                            ) : membersList?.map(({email}) => (
+                                                <SelectItem value={email}>{email}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -239,14 +280,13 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                                     <FormLabel>Team members</FormLabel>
                                     <FormControl>
                                         <MultipleSelect
+                                            disabled = {isLoading}
                                             value={field.value}
                                             onChange={field.onChange}
-                                            options={[
-                                                { label: "Design", value: "Design" },
-                                                { label: "Engineering", value: "Engineering" },
-                                                { label: "QA", value: "QA" },
-                                                { label: "Marketing", value: "Marketing" },
-                                            ]}
+                                            options={membersList?.map(({email}) => ({
+                                                label : email,
+                                                value : email
+                                            }))}
                                             placeholder="Select team"
                                             className="w-full"
                                         />
@@ -262,7 +302,15 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                                     Cancel
                                 </Button>
                             </DialogClose>
-                            <Button type="submit">Create</Button>
+                            <Button type="submit">
+                                {isPending ? (
+                                    <>
+                                        <Spinner/>
+
+                                        Creating...
+                                    </>
+                                ) : "Create"}
+                            </Button>
                         </div>
                     </form>
                 </Form>

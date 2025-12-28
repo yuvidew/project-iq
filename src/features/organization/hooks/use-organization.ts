@@ -82,10 +82,8 @@ export const useRemoveOrganization = () => {
 };
 
 // Hook to get organization members 
-
 export const useSuspenseOrganizationMembers = () => {
     const trpc = useTRPC();
-
     return useQuery({
         ...trpc.organization.getOrganizationMembers.queryOptions(),
         retry: false,

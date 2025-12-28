@@ -12,7 +12,7 @@ export async function resolveUserOrganizationRedirect(user: {
     });
 
     if (user.lastActiveOrganizationId !== null) {
-        const lastOrg = memberships.find((m) => m.organizationId === user.lastActiveOrganizationId);
+        const lastOrg = memberships.find((m) => m.organization.id === user.lastActiveOrganizationId);
 
         if (lastOrg) {
             return `/organizations/${lastOrg.organization.slug}`;

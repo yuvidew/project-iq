@@ -142,12 +142,10 @@ export const organizationRouter = router({
                 });
             }
 
-            const membership = await prisma.organizationMember.findUnique({
+            const membership = await prisma.organizationMember.findFirst({
                 where: {
-                    userId_organizationId: {
-                        userId,
-                        organizationId: organization.id,
-                    },
+                    userId,
+                    organizationSlug: organization.slug,
                 },
             });
 
@@ -172,13 +170,22 @@ export const organizationRouter = router({
         const { organizationId, name, description, logoUrl } = input;
         const userId = ctx.auth.user.id;
 
+        const organization = await prisma.organization.findUnique({
+            where: { id: organizationId },
+            select: { id: true, slug: true },
+        });
 
-        const membership = await prisma.organizationMember.findUnique({
+        if (!organization) {
+            throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "Organization not found",
+            });
+        }
+
+        const membership = await prisma.organizationMember.findFirst({
             where: {
-                userId_organizationId: {
-                    userId,
-                    organizationId,
-                },
+                userId,
+                organizationSlug: organization.slug,
             },
         });
 
@@ -190,7 +197,7 @@ export const organizationRouter = router({
         };
 
         return prisma.organization.update({
-            where: { id: organizationId },
+            where: { id: organization.id },
             data: {
                 ...(name && { name }),
                 ...(description && { description }),
@@ -208,12 +215,22 @@ export const organizationRouter = router({
         const { organizationId } = input;
         const userId = ctx.auth.user.id;
 
-        const membership = await prisma.organizationMember.findUnique({
+        const organization = await prisma.organization.findUnique({
+            where: { id: organizationId },
+            select: { id: true, slug: true },
+        });
+
+        if (!organization) {
+            throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "Organization not found",
+            });
+        }
+
+        const membership = await prisma.organizationMember.findFirst({
             where: {
-                userId_organizationId: {
-                    userId,
-                    organizationId,
-                },
+                userId,
+                organizationSlug: organization.slug,
             },
         });
 
@@ -225,7 +242,7 @@ export const organizationRouter = router({
         }
 
         return await prisma.organization.delete({
-            where: { id: organizationId },
+            where: { id: organization.id },
         });
 
     }),
@@ -247,6 +264,13 @@ export const organizationRouter = router({
                             description: true,
                             logoUrl: true,
                             createdAt: true,
+                            members : {
+                                select : {
+                                    user : {
+                                        select : {email : true}
+                                    }
+                                }
+                            },
                             _count: { select: { members: true } },
                         },
                     },
@@ -264,6 +288,7 @@ export const organizationRouter = router({
                 ...item.organization,
                 role: item.role,
                 memberCount : item.organization._count,
+                membersEmails: item.organization.members.map(({user}) => user.email)
             }));
         }
     )

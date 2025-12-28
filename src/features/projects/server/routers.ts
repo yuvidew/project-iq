@@ -5,7 +5,7 @@ import { protectedProcedure, router } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 
-export const ProjectRouter = router({
+export const projectRouter = router({
     create: protectedProcedure.input(
         z.object({
             name: z.string().min(2).max(100),
@@ -14,9 +14,9 @@ export const ProjectRouter = router({
             priority: z.nativeEnum(ProjectPriority),
             startDate: z.date().optional(),
             endDate: z.date().optional(),
-            organizationId: z.number(),
-            members: z.array(z.string()).min(1, "Select at least one member"),
-            projectLeadId: z.string().optional(),
+            organizationSlug: z.string(),
+            members: z.array(z.string().email()).min(1, "Select at least one member"),
+            projectLeadEmail: z.string().email().optional(),
         })
     ).mutation(async ({ input }) => {
         const {
@@ -25,14 +25,14 @@ export const ProjectRouter = router({
             status,
             startDate,
             endDate,
-            organizationId,
+            organizationSlug,
             members,
-            projectLeadId,
+            projectLeadEmail,
             priority,
         } = input;
 
         const organization = await prisma.organization.findUnique({
-            where: { id: organizationId },
+            where: { slug: organizationSlug },
         });
 
         if (!organization) {
@@ -50,13 +50,13 @@ export const ProjectRouter = router({
                 endDate,
                 status,
                 priority,
-                organization: { connect: { id: organizationId } },
-                projectLead: projectLeadId
-                    ? { connect: { id: projectLeadId } }
+                organization: { connect: { slug: organizationSlug } },
+                projectLead: projectLeadEmail
+                    ? { connect: { email: projectLeadEmail } }
                     : undefined,
                 members: {
-                    create: members.map((userId) => ({
-                        user: { connect: { id: userId } },
+                    create: members.map((memberEmail) => ({
+                        user: { connect: { email: memberEmail } },
                     })),
                 },
             }
@@ -67,6 +67,7 @@ export const ProjectRouter = router({
     }),
     getMany: protectedProcedure.input(
         z.object({
+            organizationSlug : z.string(),
             page: z.number().default(PAGINATION.DEFAULT_PAGE),
             pageSize: z
                 .number()
@@ -78,13 +79,14 @@ export const ProjectRouter = router({
             priority: z.nativeEnum(ProjectPriority).optional(),
         })
     ).query(async ({ input }) => {
-        const { page, pageSize, search, status, priority } = input;
+        const { page, pageSize, search, status, priority, organizationSlug } = input;
 
         const skip = (page - 1) * pageSize;
 
         const searchTerm = search.trim();
 
         const where: Prisma.ProjectWhereInput = {
+            organizationSlug,
             ...(searchTerm && {
                 OR: [
                     { name: { contains: searchTerm, mode: "insensitive" as const } },
@@ -105,7 +107,7 @@ export const ProjectRouter = router({
                 include: {
                     organization: true,
                     projectLead: true,
-                    members: true,
+                    _count: { select: { members: true } },
                 },
             }),
         ]);
@@ -149,8 +151,8 @@ export const ProjectRouter = router({
             priority: z.nativeEnum(ProjectPriority),
             startDate: z.date().optional(),
             endDate: z.date().optional(),
-            members: z.array(z.string()).min(1, "Select at least one member"),
-            projectLeadId: z.string().optional(),
+            members: z.array(z.string().email()).min(1, "Select at least one member"),
+            projectLeadEmail: z.string().email().nullable().optional(),
         })
     ).mutation(async ({ input, ctx }) => {
         const {
@@ -161,7 +163,7 @@ export const ProjectRouter = router({
             startDate,
             endDate,
             members,
-            projectLeadId,
+            projectLeadEmail,
             priority,
         } = input;
 
@@ -189,14 +191,14 @@ export const ProjectRouter = router({
                     priority,
                     ...(startDate !== undefined && { startDate }),
                     ...(endDate !== undefined && { endDate }),
-                    ...(projectLeadId !== undefined && {
-                        projectLead: projectLeadId
-                            ? { connect: { id: projectLeadId } }
+                    ...(projectLeadEmail !== undefined && {
+                        projectLead: projectLeadEmail
+                            ? { connect: { email: projectLeadEmail } }
                             : { disconnect: true },
                     }),
                     members: {
-                        create: members.map((userId) => ({
-                            user: { connect: { id: userId } },
+                        create: members.map((memberEmail) => ({
+                            user: { connect: { email: memberEmail } },
                         })),
                     },
                 },
