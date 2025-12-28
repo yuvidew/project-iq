@@ -1,65 +1,51 @@
-// src/components/ui/dialog.tsx
-"use client"
-
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { XIcon } from "lucide-react"
+
 import { cn } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/use-mobile"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
 
-// -----------------------------
-// Root + Trigger (responsive)
-// -----------------------------
-type ResponsiveDialogRootProps = {
-  open?: boolean
-  defaultOpen?: boolean
-  onOpenChange?: (open: boolean) => void
-  modal?: boolean
-  children: React.ReactNode
+function Dialog({
+  onOpenChange,
+  onReset,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root> & {
+  onReset?: () => void;
+}) {
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      {...props}
+      onOpenChange={(open) => {
+        onOpenChange?.(open);
+        if (!open) onReset?.(); 
+      }}
+    />
+  );
 }
 
-function Dialog({ children, ...props }: ResponsiveDialogRootProps) {
-  const isMobile = useIsMobile()
 
-  return isMobile ? (
-    <Drawer data-slot="drawer" {...props}>
-      {children}
-    </Drawer>
-  ) : (
-    <DialogPrimitive.Root data-slot="dialog" {...props}>
-      {children}
-    </DialogPrimitive.Root>
-  )
+function DialogTrigger({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
 }
 
-type ResponsiveDialogTriggerProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Trigger>
-
-function DialogTrigger(props: ResponsiveDialogTriggerProps) {
-  const isMobile = useIsMobile()
-
-  return isMobile ? (
-    <DrawerTrigger data-slot="drawer-trigger" {...(props as any)} />
-  ) : (
-    <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
-  )
+function DialogPortal({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
 }
 
-// -----------------------------
-// Overlay (desktop only)
-// -----------------------------
+function DialogClose({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+}
+
 function DialogOverlay({
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>) {
+}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
@@ -72,40 +58,18 @@ function DialogOverlay({
   )
 }
 
-// -----------------------------
-// Content (responsive)
-// NOTE: On mobile DO NOT render <Drawer /> here,
-// it must only render <DrawerContent />.
-// -----------------------------
-type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
-  title?: string
-  description?: string
-  showCloseButton?: boolean
-}
-
 function DialogContent({
-  title = "Command Palette",
-  description = "Search for a command to run...",
   className,
   children,
   showCloseButton = true,
+  onReset,
   ...props
-}: DialogContentProps) {
-  const isMobile = useIsMobile()
-
-  if (isMobile) {
-    return (
-      <DrawerContent data-slot="drawer-content" className={cn("max-h-full px-6 pb-20", className)}>
-
-        {/* <div className=" p-6"> */}
-          {children}
-        {/* </div> */}
-      </DrawerContent>
-    )
-  }
-
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  showCloseButton?: boolean,
+  onReset?: () => void
+}) {
   return (
-    <DialogPrimitive.Portal data-slot="dialog-portal">
+    <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
@@ -116,65 +80,79 @@ function DialogContent({
         {...props}
       >
         {children}
-
+        {showCloseButton && (
+          <DialogPrimitive.Close
+            data-slot="dialog-close"
+            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            onClick={onReset}
+          >
+            <XIcon />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
       </DialogPrimitive.Content>
-    </DialogPrimitive.Portal>
+    </DialogPortal>
   )
 }
 
-// -----------------------------
-// Desktop-only Radix re-exports
-// -----------------------------
-const DialogPortal = DialogPrimitive.Portal
-const DialogClose = DialogPrimitive.Close
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-header"
+      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      {...props}
+    />
+  )
+}
 
-const DialogHeader = ({ className, ...props }: React.ComponentPropsWithoutRef<"div">) => (
-  <div
-    data-slot="dialog-header"
-    className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
-    {...props}
-  />
-)
+function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-footer"
+      className={cn(
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        className
+      )}
+      {...props}
+    />
+  )
+}
 
-const DialogFooter = ({ className, ...props }: React.ComponentPropsWithoutRef<"div">) => (
-  <div
-    data-slot="dialog-footer"
-    className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
-    {...props}
-  />
-)
-
-const DialogTitle = ({
+function DialogTitle({
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) => (
-  <DialogPrimitive.Title
-    data-slot="dialog-title"
-    className={cn("text-lg leading-none font-semibold", className)}
-    {...props}
-  />
-)
+}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn("text-lg leading-none font-semibold", className)}
+      {...props}
+    />
+  )
+}
 
-const DialogDescription = ({
+function DialogDescription({
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>) => (
-  <DialogPrimitive.Description
-    data-slot="dialog-description"
-    className={cn("text-muted-foreground text-sm", className)}
-    {...props}
-  />
-)
+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+  return (
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props}
+    />
+  )
+}
 
 export {
   Dialog,
-  DialogTrigger,
+  DialogClose,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogOverlay,
   DialogPortal,
-  DialogClose,
-  DialogHeader,
-  DialogFooter,
   DialogTitle,
-  DialogDescription,
+  DialogTrigger,
 }

@@ -38,8 +38,8 @@ export const userInfo = router({
                 });
             };
 
-            const membership = await prisma.organizationMember.findUnique({
-                where: { userId_organizationId: { userId, organizationId: orgId } },
+            const membership = await prisma.organizationMember.findFirst({
+                where: { userId, organizationSlug: org.slug },
             });
             if (!membership) {
                 throw new TRPCError({ code: "FORBIDDEN", message: "You are not a member of this organization" });

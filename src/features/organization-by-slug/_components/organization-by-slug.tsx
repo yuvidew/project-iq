@@ -8,6 +8,9 @@ import { ArrowRightIcon, Clock10Icon, FolderOpenIcon, HistoryIcon, TriangleAlert
 import { CreateNewProject } from "../../../components/create-new-project";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useSuspenseProjects } from "@/features/projects/hooks/use-projects";
+import { Spinner } from "@/components/ui/spinner";
+import { ProjectCard } from "@/components/project-card";
 
 export const OrganizationBySlugErrorView = () => {
     return <ErrorView message='Error loading organizations' />
@@ -68,14 +71,29 @@ const EmptyInProgress = () => {
     )
 }
 
+const LoadingProject = () => {
+    return (
+        <div className=' py-10 w-full flex flex-col items-center justify-center gap-5'>
+
+            <Button size={"icon-sm"} >
+                <Spinner  />
+            </Button>
+            <h1 className=' text-muted-foreground'> Loading projects...</h1>
+        </div>
+    )
+}
+
 export const ProjectOverview = () => {
+    const { data, isFetching } = useSuspenseProjects();
+
+
     return (
         <Card
             className=" rounded-sm w-full p-0"
         >
             <CardContent className="p-0">
                 <div className="flex items-start justify-between mb-4 px-4 py-3 pb-0">
-                    <h3 className="\ text-lg font-medium">
+                    <h3 className=" text-lg font-medium">
                         Project Overview
                     </h3>
                     <p className="flex items-center gap-1 text-muted-foreground text-sm hover:underline ">
@@ -83,9 +101,24 @@ export const ProjectOverview = () => {
                     </p>
                 </div>
                 <Separator className='w-full' />
-                <EmptyProject />
+                <div className=" flex flex-col">
+                    {isFetching ? (
+                        <LoadingProject />
+                    ) : data.projects.length === 0 ? (
+                        <EmptyProject />
+                    ) : data.projects.map(({ id, name, description, status, priority, _count , endDate}) => (
+                        <ProjectCard 
+                            key={id} 
+                            name={name} 
+                            description={description} 
+                            status={status} 
+                            priority={priority}
+                            members={_count.members}
+                            endDate = {endDate}
+                        />
+                    ))}
+                </div>
             </CardContent>
-
         </Card>
     )
 };
@@ -101,7 +134,7 @@ export const RecentActivityTask = () => {
                     <h3 className="\ text-lg font-medium">
                         Recent Activity
                     </h3>
-                    
+
                 </div>
                 <Separator className='w-full' />
                 <EmptyRecentActivityTask />
@@ -119,7 +152,7 @@ export const MyTask = () => {
             <CardContent className="p-0">
                 <div className="flex items-start justify-between mb-4 px-4 py-3 pb-0">
                     <div className=" flex items-center gap-2">
-                        <Button size = "icon-sm"  variant={"shadow"} >
+                        <Button size="icon-sm" variant={"shadow"} >
                             <User2Icon className=" text-primary" />
                         </Button>
                         <h3 className="\ text-sm font-medium">
@@ -146,7 +179,7 @@ export const Overdue = () => {
             <CardContent className="p-0">
                 <div className="flex items-start justify-between mb-4 px-4 py-3 pb-0">
                     <div className=" flex items-center gap-2">
-                        <Button size = "icon-sm"  variant={"shadow"} >
+                        <Button size="icon-sm" variant={"shadow"} >
                             <TriangleAlertIcon className=" text-primary" />
                         </Button>
                         <h3 className="\ text-sm font-medium">
@@ -173,7 +206,7 @@ export const InProgress = () => {
             <CardContent className="p-0">
                 <div className="flex items-start justify-between mb-4 px-4 py-3 pb-0">
                     <div className=" flex items-center gap-2">
-                        <Button size = "icon-sm" variant={"shadow"} >
+                        <Button size="icon-sm" variant={"shadow"} >
                             <Clock10Icon className=" text-primary" />
                         </Button>
                         <h3 className="\ text-sm font-medium">
@@ -187,7 +220,6 @@ export const InProgress = () => {
                 <Separator className='w-full' />
                 <EmptyInProgress />
             </CardContent>
-
         </Card>
     )
 }

@@ -16,7 +16,7 @@ import { SettingsIcon, UsersIcon, LogOutIcon, MoonIcon, SunIcon, FolderOpenIcon,
 
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 // import { authClient } from "@/lib/auth-client"
 import { useEffect, useState } from "react";
 import { Spinner } from "./ui/spinner";
@@ -25,37 +25,39 @@ import { useTheme } from "next-themes";
 import { OrgSwitcher } from "./org-switcher";
 import { CreateOrganizationForm } from "@/features/organization/_components/create-organization-form";
 import { authClient } from "@/lib/auth-client";
+import { ParamValue } from "next/dist/server/request/params";
 
-const menu_Items = [
-    {
-        title: "Main",
-        items: [
-            {
-                title: "Dashboard",
-                url: "/organizations",
-                icon: LayoutGridIcon
-            },
-            {
-                title: "Projects",
-                url: "/projects",
-                icon: FolderOpenIcon
-            },
-            {
-                title: "Teams",
-                url: "/Teams",
-                icon: UsersIcon
-            },
-            {
-                title: "Setting",
-                url: "/setting",
-                icon: SettingsIcon
-            },
-        ],
-    },
-]
+const menu_Items = (slug :ParamValue) => [
+        {
+            title: "Main",
+            items: [
+                {
+                    title: "Dashboard",
+                    url: `/organizations/${slug}`,
+                    icon: LayoutGridIcon
+                },
+                {
+                    title: "Projects",
+                    url: `/organizations/${slug}/projects`,
+                    icon: FolderOpenIcon
+                },
+                {
+                    title: "Teams",
+                    url: `/organizations/${slug}/teams`,
+                    icon: UsersIcon
+                },
+                {
+                    title: "Setting",
+                    url: `/organizations/${slug}/setting`,
+                    icon: SettingsIcon
+                },
+            ],
+        },
+    ]
 
 export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
-    const [ open , setOpen] = useState(false)
+    const { slug } = useParams();
+    const [open, setOpen] = useState(false)
     const [isSignOutLoading, setIsSignOutLoading] = useState(false)
     const { setTheme, theme, resolvedTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
@@ -70,6 +72,7 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
     const effectiveTheme = resolvedTheme ?? theme ?? "light"
     const themeTooltip = mounted ? (effectiveTheme === "light" ? "Light" : "Dark") : "Theme"
     const themeLabel = mounted ? effectiveTheme : "theme"
+
 
     const onSignOut = async () => {
         setIsSignOutLoading(true)
@@ -93,10 +96,10 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
         <>
             <Sidebar {...props} collapsible="icon" >
                 <SidebarHeader>
-                    <OrgSwitcher onOpenDialog = {() => setOpen(true)}/>
+                    <OrgSwitcher onOpenDialog={() => setOpen(true)} />
                 </SidebarHeader>
                 <SidebarContent>
-                    {menu_Items.map((group) => (
+                    {menu_Items(slug).map((group) => (
                         <SidebarGroup key={group.title}>
                             <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
                             <SidebarGroupContent>
@@ -105,8 +108,7 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
                                         <SidebarMenuItem key={title}>
                                             <SidebarMenuButton
                                                 isActive={
-                                                    pathname === url ||
-                                                    pathname.startsWith(`${url}/`)
+                                                    pathname === url
                                                 }
                                                 tooltip={title}
                                                 asChild
@@ -158,7 +160,7 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
                 </SidebarFooter>
             </Sidebar>
 
-            <CreateOrganizationForm open = {open} setOpen={setOpen} />
+            <CreateOrganizationForm open={open} setOpen={setOpen} />
         </>
     )
 }

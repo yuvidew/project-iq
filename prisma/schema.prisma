@@ -123,17 +123,17 @@ model Organization {
 model OrganizationMember {
   id             Int  @id @default(autoincrement())
   userId         String
-  organizationId Int
+  organizationSlug String
 
   role           OrganizationRole @default(MEMBER)
 
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationSlug], references: [slug], onDelete: Cascade)
 
   createdAt      DateTime @default(now())
 
-  @@unique([userId, organizationId])
-  @@index([organizationId])
+  @@unique([userId, organizationSlug])
+  @@index([organizationSlug])
   @@map("organization_member")
 }
 
@@ -158,18 +158,18 @@ model Project {
   endDate        DateTime?
 
   // Relations
-  organizationId Int
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationSlug String
+  organization     Organization @relation(fields: [organizationSlug], references: [slug], onDelete: Cascade)
 
-  projectLeadId  String?
-  projectLead    User? @relation("ProjectLead", fields: [projectLeadId], references: [id])
+  projectLeadEmail String?
+  projectLead      User? @relation("ProjectLead", fields: [projectLeadEmail], references: [email])
 
   members        ProjectMember[]
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  @@index([organizationId])
+  @@index([organizationSlug])
   @@map("project")
 }
 

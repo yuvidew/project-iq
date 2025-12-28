@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronsUpDown, X } from "lucide-react"
+import { ChevronDownIcon, X } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -136,7 +136,7 @@ export const MultipleSelect: React.FC<MultipleSelectProps> = ({
             disabled={disabled}
           >
             <span className="truncate text-left">{displayLabel}</span>
-            <ChevronsUpDown className="size-4 opacity-50" />
+            <ChevronDownIcon className="size-4 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent
