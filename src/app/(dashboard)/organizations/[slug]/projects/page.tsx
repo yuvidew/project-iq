@@ -9,24 +9,27 @@ import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
 interface Props {
-    params: {
+    params: Promise<{
         slug: string,
-    },
+    }>,
     searchParams: Promise<SearchParams>
 }
 
 const ProjectPage = async ({
-    params: { slug },
+    params,
     searchParams
 }: Props) => {
     await requireAuth();
 
-    const params = await projectParamsLoader(searchParams);
+const { slug } = await params;
+    const resolvedSearchParams = await searchParams;
+    const projectParams = await projectParamsLoader(resolvedSearchParams);
+
     await prefetchProjects({
-        ...params,
+        ...projectParams,
         organizationSlug: slug,
-        status: params.status ?? undefined,
-        priority: params.priority ?? undefined
+        status: projectParams.status ?? undefined,
+        priority: projectParams.priority ?? undefined
     });
 
     return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { EmptyProjectView, FilterSection, ProjectsPagination, ProjectsWrapper, ProjectLists } from '../_components/projects';
+import {  FilterSection, ProjectsPagination, ProjectsWrapper, ProjectLists } from '../_components/projects';
 
 
 export const ProjectView = () => {

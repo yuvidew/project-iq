@@ -5,6 +5,6 @@ import type { inferInput } from "@trpc/tanstack-react-query";
  * Prefetch all Projects
  */
 
-export const prefetchProjects = (params : inferInput<typeof trpc.project.getMany>) =>{
+export const prefetchProjects = async (params : inferInput<typeof trpc.project.getMany>) => {
     return prefetch(trpc.project.getMany.queryOptions(params));
 };

@@ -35,6 +35,11 @@ import { Progress } from "@/components/ui/progress";
 import { Pagination } from "@/components/ui/pagination";
 import { ErrorView } from "@/components/error-view";
 import { LoadingView } from "@/components/loading-view";
+import { useSuspenseProjects } from "../hooks/use-projects";
+import { ProjectCard } from "@/components/project-card";
+import { useProjectsParams } from "../hooks/use-projects-params";
+import { useProjectSearch } from "../hooks/use-project-search";
+import { PAGINATION } from "@/lib/config";
 
 export const ProjectErrorView = () => {
     return <ErrorView message='Error loading projects' />
@@ -52,45 +57,100 @@ export const ProjectsSearch = () => {
 
 
 export const ProjectsPagination = () => {
+    const { data, isFetching } = useSuspenseProjects();
+    const [params, setParams] = useProjectsParams();
+
     return (
         <Pagination
-            // disabled={isFetching}
-            page={1}
-            totalPages={0}
-            onPageChange={() => {}}
+            disabled={isFetching}
+            page={data.meta.page}
+            totalPages={data.meta.totalPages}
+            onPageChange={(page) => setParams({
+                ...params,
+                page
+            })}
         />
     );
 };
 
+type ProjectsParams = {
+    search: string;
+    page: number;
+    status?: "PLANNING" | "IN_PROGRESS" | "BLOCKED" | "COMPLETED" | undefined;
+    priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT" | undefined;
+};
+
 export const FilterSection = () => {
+    const [params, setParams] = useProjectsParams() as [
+        ProjectsParams,
+        (p: ProjectsParams) => void
+    ];
+
+    const { searchValue, onSearchChange } = useProjectSearch({ params, setParams });
+
+    const onUpdateFilter = <K extends keyof ProjectsParams>(
+        key: K,
+        value: ProjectsParams[K] | "ALL"
+    ) => {
+        const next = { ...params, page: PAGINATION.DEFAULT_PAGE };
+
+        if (value === "ALL" || value === undefined) {
+            // Nuqs removes params when the value is null.
+            setParams({
+                ...next,
+                [key]: null,
+            } as ProjectsParams);
+            return;
+        }
+
+        setParams({
+            ...next,
+            [key]: value as ProjectsParams[K],
+        });
+    }
+
     return (
         <section className='flex items-center justify-start gap-2'>
             {/* start to search project */}
-            <SearchBox placeholder='Search projects...' />
+            <SearchBox
+                placeholder='Search projects...'
+                value={searchValue}
+                onChange={onSearchChange}
+            />
             {/* end to search project */}
 
             {/* start to status filter */}
-            <Select>
+            <Select
+                value={params.status ?? "ALL"}
+                onValueChange={(val) => onUpdateFilter("status", val as ProjectsParams["status"] | "ALL")}
+            >
                 <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Theme" />
+                    <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
+                    <SelectItem value="ALL">All status</SelectItem>
+                    <SelectItem value="PLANNING">Planning</SelectItem>
+                    <SelectItem value="IN_PROGRESS">In progress</SelectItem>
+                    <SelectItem value="BLOCKED">Blocked</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
                 </SelectContent>
             </Select>
             {/* end to status filter */}
 
             {/* start to status priority */}
-            <Select>
+            <Select
+                value={params.priority ?? "ALL"}
+                onValueChange={(val) => onUpdateFilter("priority", val as ProjectsParams["priority"] | "ALL")}
+            >
                 <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Theme" />
+                    <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
+                    <SelectItem value="ALL">All priority</SelectItem>
+                    <SelectItem value="LOW">Low</SelectItem>
+                    <SelectItem value="MEDIUM">Medium</SelectItem>
+                    <SelectItem value="HIGH">High</SelectItem>
+                    <SelectItem value="URGENT">Urgent</SelectItem>
                 </SelectContent>
             </Select>
             {/* end to status priority */}
@@ -103,12 +163,14 @@ interface EmptyProjectViewProps {
     message: string;
     label?: string;
     empty_label?: string;
+    isCreate?: boolean
 }
 
 
 export const EmptyProjectView = ({
     message,
-    empty_label = "No items"
+    empty_label = "No items",
+    isCreate = true
 }: EmptyProjectViewProps) => {
     return (
         <div className=" w-md m-auto h-96 flex items-center justify-center">
@@ -121,55 +183,40 @@ export const EmptyProjectView = ({
                     {!!message && <EmptyDescription>{message}</EmptyDescription>}
                 </EmptyHeader>
 
-                <EmptyContent>
-                    <CreateNewProject title="Create new Project" />
-                </EmptyContent>
+                {isCreate && (
+                    <EmptyContent>
+                        <CreateNewProject title="Create new Project" />
+                    </EmptyContent>
+                )}
             </Empty>
         </div>
     );
 };
 
-export const ProjectCard = () => {
-    return (
-        <Card className=" rounded-sm h-56">
-            <CardHeader>
-                <CardTitle className=" font-semibold">Project IQ</CardTitle>
-                <CardDescription className=" text-sm line-clamp-2">
-                    Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eaque voluptatum voluptate assumenda? Ipsam repudiandae, repellat odio tenetur nulla, earum dolores et non dolorem in enim dignissimos dolor numquam laboriosam ratione.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className=" flex items-center justify-between">
-                    <BadgeText />
 
-                    <p className=" text-muted-foreground text-sm">
-                        MEDIUM Priority
-                    </p>
-                </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2">
-                <div className=" flex items-center w-full justify-between gap-2">
-                    <p>Progress</p>
-
-                    <span className=" text-muted-foreground">
-                        0%
-                    </span>
-                </div>
-                <Progress status="ACTIVE" />
-            </CardFooter>
-        </Card>
-    )
-}
 
 export const ProjectLists = () => {
-    
+    const { data } = useSuspenseProjects();
+
+    if (data.projects.length === 0) {
+        return <EmptyProjectView message="" empty_label="No projects yet" isCreate={false} />
+    }
+
     return (
         <section className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5 h-full">
-            <ProjectCard />
-            <ProjectCard />
-            <ProjectCard />
-            <ProjectCard />
-            <ProjectCard />
+            {data.projects.map(({ id, name, description, status, priority, _count, endDate }) => (
+                <ProjectCard
+                    id = {id}
+                    key={id}
+                    name={name}
+                    description={description}
+                    status={status}
+                    priority={priority}
+                    members={_count.members}
+                    endDate={endDate}
+                    classname="border border-primary"
+                />
+            ))}
         </section>
     )
 }
