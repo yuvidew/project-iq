@@ -17,21 +17,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
 
-import { PackageOpenIcon, PlusIcon } from "lucide-react";
-import { BadgeText } from "@/components/ui/badge-text";
-import { Progress } from "@/components/ui/progress";
+
+import { PackageOpenIcon } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import { ErrorView } from "@/components/error-view";
 import { LoadingView } from "@/components/loading-view";
