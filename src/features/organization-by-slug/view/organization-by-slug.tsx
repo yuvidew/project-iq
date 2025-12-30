@@ -24,6 +24,7 @@ export const OrganizationBySlug = () => {
             {/* end to create new project section  */}
 
             {/* start to progress card */}
+            {/* TODO: add the actual data get from the api  */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ">
                 <Card
                     className=" rounded-sm"
