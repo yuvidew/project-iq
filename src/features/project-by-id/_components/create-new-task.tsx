@@ -1,3 +1,5 @@
+"use client"
+
 import {
     Dialog,
     DialogClose,
@@ -30,39 +32,61 @@ import {
 } from "@/components/ui/select";
 import { DatePicker } from '@/components/ui/date-picker';
 import { useTaskForm } from "../hooks/use-task-form";
+import { useCreateTask } from "../hooks/use-task";
+import { useParams } from "next/navigation";
+import { TaskStatus } from "@/generated/prisma";
+import { Spinner } from "@/components/ui/spinner";
+import { useOrgMembers } from "@/features/organization-members/hooks/use-organization-members";
 
 const CreateNewTaskSchema = z.object({
     name: z.string().min(4, {
-        message: "Task name must be 6 characters long"
+        message: "Task name must be at least 4 characters"
     }),
     description: z.string().optional(),
-    status: z.string(),//TODO: change to native enum
-    priority: z.string(),//TODO: change to native enum
-    assignee: z.string(),
-    type: z.string(),//TODO: change to native enum
-    due_date: z.date(),
+    status: z.nativeEnum(TaskStatus),
+    assigneeId: z.string(),
+    due_date: z.date().optional(),
 });
 
 type CreateNewTaskValue = z.infer<typeof CreateNewTaskSchema>;
 
 
 export const CreateNewTaskForm = () => {
-    const {open, setOpen} = useTaskForm();
+    const { open, setOpen } = useTaskForm();
+    const { mutate: onCreateTask, isPending } = useCreateTask()
+    const { data: membersList, isLoading } = useOrgMembers();
 
+    const { id } = useParams<{ id: string }>();
     const form = useForm<CreateNewTaskValue>({
         resolver: zodResolver(CreateNewTaskSchema),
         defaultValues: {
             name: "",
             description: "",
-            status: "",
-            priority: "",
-            type: "",
-            assignee: "unassigned",
+            status: "TODO",
+            assigneeId: "unassigned",
             due_date: undefined
         }
     });
 
-    const onSubmit = () => { }
+    const onSubmit = (values: CreateNewTaskValue) => {
+        onCreateTask(
+            {
+                name: values.name,
+                description: values.description,
+                status: values.status,
+                assigneeId: values.assigneeId,
+                projectId: id,
+                dueDate: values.due_date,
+                position: 0
+            },
+            {
+                onSuccess: () => {
+                    form.reset();
+                    setOpen(false);
+                }
+            },
+        );
+    };
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -117,10 +141,11 @@ export const CreateNewTaskForm = () => {
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="PLANNING">Planning</SelectItem>
+                                                <SelectItem value="BACKLOG">Backlog</SelectItem>
+                                                <SelectItem value="TODO">To do</SelectItem>
                                                 <SelectItem value="IN_PROGRESS">In progress</SelectItem>
-                                                <SelectItem value="BLOCKED">Blocked</SelectItem>
-                                                <SelectItem value="COMPLETED">Completed</SelectItem>
+                                                <SelectItem value="IN_REVIEW">In review</SelectItem>
+                                                <SelectItem value="DONE">Completed</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -131,7 +156,7 @@ export const CreateNewTaskForm = () => {
 
                             <FormField
                                 control={form.control}
-                                name="assignee"
+                                name="assigneeId"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Assignee</FormLabel>
@@ -145,6 +170,13 @@ export const CreateNewTaskForm = () => {
                                                 <SelectItem value="unassigned">
                                                     Unassigned
                                                 </SelectItem>
+                                                {isLoading ? (
+                                                    <SelectItem value="No lead">
+                                                        <Spinner className="text-muted-foreground" />
+                                                    </SelectItem>
+                                                ) : membersList?.map(({ email , id}) => (
+                                                    <SelectItem value={id}>{email}</SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -173,20 +205,19 @@ export const CreateNewTaskForm = () => {
                         />
 
                         <div className="flex justify-end gap-2">
-                            <DialogClose asChild>
-                                <Button type="button" variant="secondary">
+                            <DialogClose asChild disabled = {isPending}>
+                                <Button type="button" variant="secondary" >
                                     Cancel
                                 </Button>
                             </DialogClose>
-                            <Button type="submit">
-                                {/* {isPending ? (
-                                        <>
-                                            <Spinner />
+                            <Button type="submit" disabled = {isPending}>
+                                {isPending ? (
+                                    <>
+                                        <Spinner />
 
-                                            Creating...
-                                        </>
-                                    ) : "Create"} */}
-                                Create Task
+                                        Creating...
+                                    </>
+                                ) : "Create Task"}
                             </Button>
                         </div>
                     </form>

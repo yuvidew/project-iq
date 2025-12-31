@@ -13,9 +13,10 @@ import {
     type SortingState,
     type VisibilityState,
     type Row,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
 import { Checkbox } from "@/components/ui/checkbox"
 import {
     Select,
@@ -32,73 +33,28 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { useState } from "react"
+import { ReactNode, useState } from "react"
 import { format } from 'date-fns';
-import { BadgePriority } from "@/components/ui/badge-priority"
-import { BadgeTaskType } from "@/components/ui/badge-type"
-
-// TODO: list actual data fetch from api 
-
-export const data: TASK[] = [
-    {
-        id: 1,
-        title: "Fix login bug",
-        status: "TODO",
-        type: "BUG",
-        priority: "HIGH",
-        assignee: "yuvraj.dev@example.com",
-        due_date: new Date("2025-01-05"),
-    },
-    {
-        id: 2,
-        title: "Design dashboard UI",
-        status: "IN_PROGRESS",
-        type: "FEATURE",
-        priority: "MEDIUM",
-        assignee: "aman.ui@example.com",
-        due_date: new Date("2025-01-10"),
-    },
-    {
-        id: 3,
-        title: "API integration",
-        status: "IN_PROGRESS",
-        type: "TASK",
-        priority: "HIGH",
-        assignee: "rohit.backend@example.com",
-        due_date: new Date("2025-01-07"),
-    },
-    {
-        id: 4,
-        title: "Write unit tests",
-        status: "TODO",
-        type: "IMPROVEMENT",
-        priority: "LOW",
-        assignee: "neha.qa@example.com",
-        due_date: new Date("2025-01-15"),
-    },
-    {
-        id: 5,
-        title: "Deploy to production",
-        status: "DONE",
-        type: "OTHER",
-        priority: "HIGH",
-        assignee: "admin@example.com",
-        due_date: new Date("2025-01-01"),
-    },
-];
+import { Task } from "../types"
+import { TaskStatus } from "@/generated/prisma"
+import { SquarePenIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTaskForm } from "../hooks/use-task-form";
 
 
-type TASK = {
-    id: number,
-    title: string,
-    status: "BACKLOG" | "IN_REVIEW" | "TODO" | "IN_PROGRESS" | "DONE",
-    type: "TASK" | "BUG" | "FEATURE" | "IMPROVEMENT" | "OTHER",
-    priority: "LOW" | "MEDIUM" | "HIGH",
-    assignee: string,
-    due_date: Date,
+
+const EditTask = () => {
+    const { setOpen } = useTaskForm()
+    return (
+        <Button onClick={() => setOpen(true)} variant={"ghost"} size={"icon"} >
+            <SquarePenIcon />
+        </Button>
+    )
 }
 
-export const columns: ColumnDef<TASK>[] = [
+
+
+export const columns: ColumnDef<Task>[] = [
     {
         id: "select",
         header: ({ table }) => (
@@ -122,59 +78,94 @@ export const columns: ColumnDef<TASK>[] = [
         enableHiding: false,
     },
     {
-        accessorKey: "title",
+        accessorKey: "name",
         header: "TITLE",
-        cell: ({ row }: { row: Row<TASK> }) => (
-            <div className=" capitalize ">{row.getValue("title")}</div>
+        cell: ({ row }: { row: Row<Task> }) => (
+            <div className=" capitalize ">{row.getValue("name")}</div>
         ),
-    },
-    {
-        accessorKey: "type",
-        header: "TYPE",
-        cell: ({ row }) => <BadgeTaskType type={row.getValue("type")} />,
     },
     {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => (
             // <div className=" capitalize ">{row.getValue("status")}</div>
-            <Select value={row.getValue("status")}>
+            <Select value={row.getValue("status") as TaskStatus}>
                 <SelectTrigger >
                     <SelectValue placeholder="All Statues" />
                 </SelectTrigger>
                 <SelectContent>
+                    <SelectItem value="BACKLOG">Backlog</SelectItem>
                     <SelectItem value="TODO">Todo</SelectItem>
                     <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                    <SelectItem value="IN_REVIEW">In Review</SelectItem>
                     <SelectItem value="DONE">Done</SelectItem>
                 </SelectContent>
             </Select>
         ),
     },
     {
-        accessorKey: "priority",
-        header: "PRIORITY",
-        cell: ({ row }) => (
-            // <div className=" capitalize ">{row.getValue("priority")}</div>
-            <BadgePriority priority={row.getValue("priority")} />
-        ),
-    },
-    {
         accessorKey: "assignee",
         header: "ASSIGNEE",
-        cell: ({ row }) => <div className=" capitalize ">{row.getValue("assignee")}</div>,
+        cell: ({ row }) => {
+            const value = row.getValue("assignee") as Task["assignee"] | null;
+            const image = value?.image
+            const display = value?.name || value?.email || "Unassigned";
+            return (
+                <div className=" capitalize flex items-center gap-2">
+                    <Avatar>
+                        {image ? (
+                            <AvatarImage src={image} alt={display} />
+                        ) : (
+                            <AvatarFallback className=" text-sm">
+                                {display
+                                    .split(" ")
+                                    .map(word => word[0])
+                                    .join("")
+                                    .slice(0, 2)
+                                    .toUpperCase()}
+                            </AvatarFallback>
+                        )}
+                    </Avatar>
+                    {display}
+                </div>
+            );
+        },
     },
     {
-        accessorKey: "due_date",
+        accessorKey: "dueDate",
         header: "DUE DATE",
-        cell: ({ row }: { row: Row<TASK> }) => {
-            const value = row.getValue("due_date") as Date;
-
-            return <div className=" capitalize ">{format(value, "MMM dd, yyyy")}</div>;
+        cell: ({ row }: { row: Row<Task> }) => {
+            const value = row.getValue("dueDate") as Date | null;
+            return (
+                <div className=" capitalize ">
+                    {value ? format(value, "MMM dd, yyyy") : "No due date"}
+                </div>
+            );
         },
+    },
+    {
+        accessorKey: "position",
+        header: "POSITION",
+        cell: ({ row }) => <div>{row.getValue("position")}</div>,
+    },
+    {
+        id: "Edit",
+        header: "EDIT",
+        cell: () => (
+            <EditTask />
+        ),
+        enableSorting: false,
+        enableHiding: false,
     },
 ]
 
-export const TaskTable = () => {
+interface Props {
+    taskList: Task[],
+    searchFilter : ReactNode;
+    pagination : ReactNode;
+}
+
+export const TaskTable = ({ taskList , searchFilter, pagination }: Props) => {
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
         []
@@ -184,7 +175,7 @@ export const TaskTable = () => {
     const [rowSelection, setRowSelection] = useState({})
 
     const table = useReactTable({
-        data,
+        data: taskList,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -203,54 +194,12 @@ export const TaskTable = () => {
     })
 
     return (
-        <section className="w-full">
-            <div className="flex items-center gap-3 py-4">
-                <Select>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="All Statues" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="TODO">Todo</SelectItem>
-                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                        <SelectItem value="DONE">Done</SelectItem>
-                    </SelectContent>
-                </Select>
+        <section className="w-full flex flex-col gap-6 pt-5">
+            {/* start to search */}
+                {searchFilter}
+            {/* end to search */}
 
-                <Select>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="All Types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="TASK">Task</SelectItem>
-                        <SelectItem value="BUG">Bug</SelectItem>
-                        <SelectItem value="FEATURE">Feature</SelectItem>
-                        <SelectItem value="IMPROVEMENT">Improvement</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <Select>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="All Priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="LOW">Low</SelectItem>
-                        <SelectItem value="MEDIUM">Medium</SelectItem>
-                        <SelectItem value="HIGH">High</SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <Select>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="All Assignees" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="dark">Dark</SelectItem>
-                        <SelectItem value="system">System</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
+            {/* <SearchSection /> */}
             <div className="overflow-hidden rounded-md border">
                 <Table>
                     <TableHeader>
@@ -301,30 +250,10 @@ export const TaskTable = () => {
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex items-center justify-end space-x-2 py-4">
-                <div className="text-muted-foreground flex-1 text-sm">
-                    {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                    {table.getFilteredRowModel().rows.length} row(s) selected.
-                </div>
-                <div className="space-x-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
-                    >
-                        Previous
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
-                    >
-                        Next
-                    </Button>
-                </div>
-            </div>
+
+            {/* start to pagination */}
+            {pagination}
+            {/* end to pagination */}
         </section>
     )
 }

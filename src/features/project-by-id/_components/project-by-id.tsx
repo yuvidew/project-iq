@@ -20,12 +20,40 @@ import { BadgeText } from "@/components/ui/badge-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { TaskTable } from "./task-table";
 import { TaskByStatus } from "./task-by-status";
 import { TaskByType } from "./task-by-type";
 import { CreateNewTaskForm } from "./create-new-task";
 import { useTaskForm } from "../hooks/use-task-form";
 import { DataKanban } from "./data-kanban";
+import { ErrorView } from "@/components/error-view";
+import { LoadingView } from "@/components/loading-view";
+import { useSuspenseProjectPerformance } from "../hooks/use-project-by-id";
+import { useSuspenseTasks } from "../hooks/use-task";
+import { TaskStatus } from "@/generated/prisma";
+import { useTaskParams } from "../hooks/use-taks-params";
+import { useProjectTaskSearch } from "../hooks/use-project-task-search";
+import { useOrgMembers } from "@/features/organization-members/hooks/use-organization-members";
+import { PAGINATION } from "@/lib/config";
+import { SearchBox } from "@/components/search_box";
+import { Spinner } from "@/components/ui/spinner";
+import { Pagination } from "@/components/ui/pagination";
+
+export const ProjectTaskErrorView = () => {
+    return <ErrorView message='Error loading tasks of projects' />
+};
+
+export const ProjectTaskLoadingView = () => {
+    return <LoadingView message='Loading tasks of projects...' />
+};
 
 const AnalyticsComp = () => {
     return (
@@ -86,7 +114,110 @@ const AnalyticsComp = () => {
     );
 };
 
+type ProjectsParams = {
+    search: string;
+    page: number;
+    status?: TaskStatus;
+    assigneeId?: string;
+};
+
+const SearchSection = () => {
+    const [params, setParams] = useTaskParams() as [
+        ProjectsParams,
+        (p: ProjectsParams) => void
+    ];
+    const { searchValue, onSearchChange } = useProjectTaskSearch({ params, setParams });
+
+    const { data: membersList, isLoading } = useOrgMembers();
+
+    const onUpdateFilter = <K extends keyof ProjectsParams>(
+        key: K,
+        value: ProjectsParams[K] | "ALL"
+    ) => {
+        const next = { ...params, page: PAGINATION.DEFAULT_PAGE };
+
+        if (value === "ALL" || value === undefined) {
+            // Nuqs removes params when the value is null.
+            setParams({
+                ...next,
+                [key]: null,
+            } as ProjectsParams);
+            return;
+        }
+
+        setParams({
+            ...next,
+            [key]: value as ProjectsParams[K],
+        });
+    }
+
+    return (
+        <div className="flex items-center gap-3 ">
+            <SearchBox
+                placeholder="Search task..."
+                value={searchValue}
+                onChange={onSearchChange}
+            />
+            <Select
+                value={params.status ?? "ALL"}
+                onValueChange={(val) => onUpdateFilter("status", val as ProjectsParams["status"] | "ALL")}
+            >
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue
+                        placeholder="All Statues" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="ALL">All status</SelectItem>
+                    <SelectItem value="TODO">Todo</SelectItem>
+                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                    <SelectItem value="DONE">Done</SelectItem>
+                </SelectContent>
+            </Select>
+
+
+            <Select
+                value={params.assigneeId ?? "ALL"}
+                onValueChange={(val) => onUpdateFilter("assigneeId", val as ProjectsParams["assigneeId"] | "ALL")}
+            >
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Assignees" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="ALL">All </SelectItem>
+                    {isLoading ? (
+                        <SelectItem value="No lead">
+                            <Spinner className="text-muted-foreground" />
+                        </SelectItem>
+                    ) : membersList?.map(({ email, id }) => (
+                        <SelectItem value={id}>{email}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    )
+}
+
+
+const TaskListPagination = () => {
+    const { data, isFetching } = useSuspenseTasks();
+    const [params, setParams] = useTaskParams();
+
+    return (
+        <Pagination
+            disabled={isFetching}
+            page={data.meta.page}
+            totalPages={data.meta.totalPages}
+            onPageChange={(page) => setParams({
+                ...params,
+                page
+            })}
+        />
+    );
+
+}
+
 export const TaskTabs = () => {
+    const { data } = useSuspenseTasks();
     return (
         <Tabs defaultValue="task" className="w-full ">
             <TabsList className="p-0 rounded-sm">
@@ -112,10 +243,14 @@ export const TaskTabs = () => {
                 </TabsTrigger>
             </TabsList>
             <TabsContent value="task">
-                <TaskTable />
+                <TaskTable
+                    searchFilter={<SearchSection />}
+                    pagination={<TaskListPagination/>}
+                    taskList={data.tasks}
+                />
             </TabsContent>
             <TabsContent value="kanban">
-                <DataKanban/>
+                <DataKanban />
             </TabsContent>
             <TabsContent value="calender">TODO: create calendar comp</TabsContent>
             <TabsContent value="analytics">
@@ -127,6 +262,8 @@ export const TaskTabs = () => {
 };
 
 export const ProjectIdView = () => {
+    const { data } = useSuspenseProjectPerformance();
+
     const { setOpen } = useTaskForm();
 
     const navigate = useRouter();
@@ -163,7 +300,7 @@ export const ProjectIdView = () => {
                                 </h3>
                                 <ZapIcon className={`size-5 text-blue-500`} />
                             </div>
-                            <p className="text-4xl font-bold ">0</p>
+                            <p className="text-4xl font-bold ">{data.totalTasks}</p>
                         </CardContent>
                     </Card>
 
@@ -171,11 +308,11 @@ export const ProjectIdView = () => {
                         <CardContent className="">
                             <div className="flex items-start justify-between mb-4">
                                 <h3 className="text-green-500 text-sm font-medium">
-                                    Completed Projects
+                                    Completed
                                 </h3>
                                 <ZapIcon className={`size-5 text-green-500`} />
                             </div>
-                            <p className="text-4xl font-bold ">0</p>
+                            <p className="text-4xl font-bold ">{data.completed}</p>
                         </CardContent>
                     </Card>
 
@@ -187,7 +324,7 @@ export const ProjectIdView = () => {
                                 </h3>
                                 <ZapIcon className={`size-5 text-yellow-500`} />
                             </div>
-                            <p className="text-4xl font-bold ">0</p>
+                            <p className="text-4xl font-bold ">{data.inProgress}</p>
                         </CardContent>
                     </Card>
 
@@ -199,7 +336,7 @@ export const ProjectIdView = () => {
                                 </h3>
                                 <ZapIcon className={`size-5 text-indigo-500`} />
                             </div>
-                            <p className="text-4xl font-bold ">0</p>
+                            <p className="text-4xl font-bold ">{data.teamMembers}</p>
                         </CardContent>
                     </Card>
                 </section>

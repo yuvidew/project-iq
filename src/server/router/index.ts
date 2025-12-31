@@ -6,13 +6,15 @@ import { organizationRouter } from "@/features/organization/server/routers";
 import { userInfo } from "@/features/user/server/routers";
 import { projectRouter } from "@/features/projects/server/routers";
 import { organizationMembersRouter } from '../../features/organization-members/server/routers';
+import { taskRouter } from "@/features/project-by-id/server/routers";
 
 export const appRouter = router({
     image: imageRouter,
     organization : organizationRouter,
     userInfo: userInfo,
     project : projectRouter,
-    organizationMembers : organizationMembersRouter
+    organizationMembers : organizationMembersRouter,
+    task : taskRouter
 });
 
 export type AppRouter = typeof appRouter;
