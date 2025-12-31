@@ -91,7 +91,7 @@ export const data: TASK[] = [
 type TASK = {
     id: number,
     title: string,
-    status: "TODO" | "IN_PROGRESS" | "DONE",
+    status: "BACKLOG" | "IN_REVIEW" | "TODO" | "IN_PROGRESS" | "DONE",
     type: "TASK" | "BUG" | "FEATURE" | "IMPROVEMENT" | "OTHER",
     priority: "LOW" | "MEDIUM" | "HIGH",
     assignee: string,

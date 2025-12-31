@@ -34,6 +34,9 @@ model User {
   ownedOrganizations  Organization[] @relation("OrganizationOwner")
   projectMemberships  ProjectMember[]
   projectLeadProjects Project[] @relation("ProjectLead")
+  assignedTasks   Task[]       @relation("TaskAssignee")
+  taskMemberships TaskMember[] @relation("TaskMemberUser")
+
 
   @@map("user")
 }
@@ -165,6 +168,8 @@ model Project {
   projectLead      User? @relation("ProjectLead", fields: [projectLeadEmail], references: [email])
 
   members        ProjectMember[]
+  tasks Task[]
+
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -192,6 +197,44 @@ model ProjectMember {
 }
 
 
+model Task {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  status      TaskStatus @default(TODO)
+  position    Int        @default(0)      // order within a status column
+  dueDate     DateTime?
+
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  assigneeId String
+  assignee   User?    @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  // members    TaskMember[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([projectId, status])
+  @@unique([projectId, status, position], name: "task_column_order")
+}
+
+model TaskMember {
+  id     Int    @id @default(autoincrement())
+  taskId String
+  userId String
+
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation("TaskMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+
+
+  @@unique([taskId, userId])
+  @@index([userId])
+}
+
+
 
 // ==============================
 // Enums
@@ -215,7 +258,7 @@ enum ProjectPriority {
   LOW
   MEDIUM
   HIGH
-  CRITICAL
+  URGENT
 }
 
 enum ProjectMemberRole {
@@ -223,3 +266,10 @@ enum ProjectMemberRole {
   MEMBER
 }
 
+enum TaskStatus {
+  BACKLOG
+  IN_REVIEW
+  TODO
+  IN_PROGRESS
+  DONE
+}
