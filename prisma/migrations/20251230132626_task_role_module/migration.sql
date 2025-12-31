@@ -1,0 +1,2 @@
+-- CreateEnum
+CREATE TYPE "TaskRole" AS ENUM ('BACKLOG', 'IN_REVIEW', 'TODO', 'IN_PROGRESS', 'DONE');

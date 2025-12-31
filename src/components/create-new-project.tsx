@@ -118,8 +118,7 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
             <DialogContent className=" flex flex-col gap-8">
                 <DialogHeader>
                     <DialogTitle>Create New Project</DialogTitle>
-                    <DialogDescription className=" text-sm">
-                        In workspace: <span className="text-primary">Yuvi</span>
+                    <DialogDescription className=" hidden p-0">
                     </DialogDescription>
                 </DialogHeader>
 
