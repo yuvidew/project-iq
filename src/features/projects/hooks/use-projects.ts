@@ -56,7 +56,7 @@ export const useSuspenseProjects = () => {
 };
 
 // Hook to update project
-export const useUploadProject = () => {
+export const useUpdateProject = () => {
     const queryClient = useQueryClient();
     const trpc = useTRPC();
     const { slug } = useParams<{ slug?: string }>();

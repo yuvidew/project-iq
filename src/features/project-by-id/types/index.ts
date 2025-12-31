@@ -1,12 +1,20 @@
-// import { TaskStatus } from "@/generated/prisma";
+import { TaskStatus } from "@/generated/prisma";
 
-export type task =  {
+export type Task = {
+    description: string | null;
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
     name: string;
-    status: "BACKLOG" | "IN_REVIEW" | "TODO" | "IN_PROGRESS" | "DONE";
-    workspaceId: string;
-    assigneeId: string;
+    status: TaskStatus;
     projectId: string;
+    assigneeId: string | null;
+    assignee?: {
+        email: string;
+        id: string;
+        name: string | null;
+        image: string | null;
+    } | null;
+    dueDate: Date | null;
     position: number;
-    dueDate: string;
-    description?: string;
 }

@@ -1,17 +1,10 @@
 import { create } from "zustand";
+import { Task } from "../types";
 
 type TaskFrom = {
     open: boolean;
     setOpen: (value: boolean) => void;
-    initialState?: {
-        name: string,
-        description: string,
-        status: string,//TODO: change to native enum
-        priority: string,//TODO: change to native enum
-        assignee: string,
-        type: string,//TODO: change to native enum
-        due_date: Date | null,
-    }
+    initialState?: Task
 };
 
 export const useTaskForm = create<TaskFrom>((set) => ({
@@ -23,9 +16,8 @@ export const useTaskForm = create<TaskFrom>((set) => ({
         name: "",
         description: "",
         status: "TODO",
-        priority: "MEDIUM",
-        assignee: "",
-        type: "TASK",
-        due_date: null,
+        dueDate: null,
+        assigneeId : "",
+        position : 0
     },
 })) 

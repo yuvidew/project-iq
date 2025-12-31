@@ -15,10 +15,11 @@ export const taskRouter = router({
                 projectId: z.string(),
                 assigneeId: z.string(),
                 dueDate: z.date().optional(),
+                position : z.number()
             })
         )
         .mutation(async ({ input }) => {
-            const { name, description, status, projectId, assigneeId, dueDate } =
+            const { name, description, status, projectId, assigneeId, dueDate , position} =
                 input;
 
             const project = await prisma.project.findUnique({
@@ -46,7 +47,7 @@ export const taskRouter = router({
                     project: { connect: { id: projectId } },
                     assignee: { connect: { id: assigneeId } },
                     dueDate,
-                    position: (lastTask?.position ?? 0) + 1,
+                    position: (lastTask?.position ?? position) + 1,
                 },
             });
         }),
@@ -86,15 +87,42 @@ export const taskRouter = router({
                 ...(status && { status }),
             };
 
-            const [total, tasks] = await Promise.all([
+            const [total, tasks, projectMembers] = await Promise.all([
                 prisma.task.count({ where }),
                 prisma.task.findMany({
                     where,
                     orderBy: { createdAt: "desc" },
                     skip,
                     take: pageSize,
-                })
+                    include: {
+                        assignee: {
+                            select: {
+                                id: true,
+                                email: true,
+                                name: true,
+                                image: true,
+                            },
+                        },
+                    },
+                }),
+                prisma.projectMember.findMany({
+                    where: { projectId },
+                    select: {
+                        user: {
+                            select: {
+                                id: true,
+                                email: true,
+                                name: true,
+                                image: true,
+                            },
+                        },
+                    },
+                }),
             ]);
+
+            const assignees = projectMembers
+                .map((pm) => pm.user)
+                .filter((u): u is NonNullable<typeof u> => Boolean(u));
 
             return {
                 tasks,
@@ -228,6 +256,64 @@ export const taskRouter = router({
 
                 return tx.task.delete({ where: { id } })
             });
-        })
+        }),
+
+    getProjectPerformance: protectedProcedure
+        .input(
+            z.object({
+                projectId: z.string(),
+            })
+        )
+        .query(async ({ input }) => {
+            const { projectId } = input;
+
+            const [project, taskCounts, teamMembers] = await Promise.all([
+                prisma.project.findUnique({ where: { id: projectId } }),
+                prisma.task.groupBy({
+                    by: ["status"],
+                    _count: true,
+                    where: { projectId },
+                }),
+                prisma.projectMember.count({ where: { projectId } }),
+            ]);
+
+            if (!project) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Project not found",
+                });
+            }
+
+            const countsByStatus = taskCounts.reduce<Record<TaskStatus, number>>(
+                (acc, curr) => {
+                    acc[curr.status as TaskStatus] = curr._count;
+                    return acc;
+                },
+                {
+                    [TaskStatus.BACKLOG]: 0,
+                    [TaskStatus.IN_REVIEW]: 0,
+                    [TaskStatus.TODO]: 0,
+                    [TaskStatus.IN_PROGRESS]: 0,
+                    [TaskStatus.DONE]: 0,
+                }
+            );
+
+            const total =
+                countsByStatus[TaskStatus.BACKLOG] +
+                countsByStatus[TaskStatus.IN_REVIEW] +
+                countsByStatus[TaskStatus.TODO] +
+                countsByStatus[TaskStatus.IN_PROGRESS] +
+                countsByStatus[TaskStatus.DONE];
+
+            return {
+                totalTasks: total,
+                completed: countsByStatus[TaskStatus.DONE],
+                inProgress: countsByStatus[TaskStatus.IN_PROGRESS],
+                backlog: countsByStatus[TaskStatus.BACKLOG],
+                inReview: countsByStatus[TaskStatus.IN_REVIEW],
+                todo: countsByStatus[TaskStatus.TODO],
+                teamMembers,
+            };
+        }),
 
 });

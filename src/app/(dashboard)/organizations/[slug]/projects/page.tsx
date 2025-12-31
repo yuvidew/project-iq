@@ -21,7 +21,7 @@ const ProjectPage = async ({
 }: Props) => {
     await requireAuth();
 
-const { slug } = await params;
+    const { slug } = await params;
     const resolvedSearchParams = await searchParams;
     const projectParams = await projectParamsLoader(resolvedSearchParams);
 
