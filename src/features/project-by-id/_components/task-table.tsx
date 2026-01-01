@@ -37,26 +37,13 @@ import { ReactNode, useState } from "react"
 import { format } from 'date-fns';
 import { Task } from "../types"
 import { TaskStatus } from "@/generated/prisma"
-import { MoreHorizontalIcon, SquarePenIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useTaskForm } from "../hooks/use-task-form";
+import { MoreHorizontalIcon } from "lucide-react";
 import { TaskActions } from "./project-by-id";
+import { BadgeTaskStatus } from "@/components/ui/badge-task-status";
+import { Button } from "@/components/ui/button";
+import { useRemoveAllTasks } from "../hooks/use-task";
+import { Spinner } from "@/components/ui/spinner";
 
-const EditTask = ({ task }: { task: Task }) => {
-    const { setOpen, setInitialState } = useTaskForm();
-    return (
-        <Button
-            onClick={() => {
-                setInitialState(task);
-                setOpen(true);
-            }}
-            variant={"ghost"}
-            size={"icon"}
-        >
-            <SquarePenIcon />
-        </Button>
-    )
-}
 
 
 
@@ -94,19 +81,7 @@ export const columns: ColumnDef<Task>[] = [
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => (
-            // <div className=" capitalize ">{row.getValue("status")}</div>
-            <Select value={row.getValue("status") as TaskStatus}>
-                <SelectTrigger >
-                    <SelectValue placeholder="All Statues" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="BACKLOG">Backlog</SelectItem>
-                    <SelectItem value="TODO">Todo</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="IN_REVIEW">In Review</SelectItem>
-                    <SelectItem value="DONE">Done</SelectItem>
-                </SelectContent>
-            </Select>
+            <BadgeTaskStatus status={(row.getValue("status") as TaskStatus) ?? "TODO"} />
         ),
     },
     {
@@ -150,11 +125,6 @@ export const columns: ColumnDef<Task>[] = [
         },
     },
     {
-        accessorKey: "position",
-        header: "POSITION",
-        cell: ({ row }) => <div>{row.getValue("position")}</div>,
-    },
-    {
         id: "Edit",
         header: "EDIT",
         cell: ({ row }) => (
@@ -181,6 +151,7 @@ export const TaskTable = ({ taskList, searchFilter, pagination }: Props) => {
     const [columnVisibility, setColumnVisibility] =
         useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = useState({})
+    const { mutate: removeAllTasks, isPending: isDeleting } = useRemoveAllTasks();
 
     const table = useReactTable({
         data: taskList,
@@ -201,10 +172,40 @@ export const TaskTable = ({ taskList, searchFilter, pagination }: Props) => {
         },
     })
 
+    const selectedIds = table
+        .getSelectedRowModel()
+        .rows.map((row) => row.original.id);
+
+    const onRemoveSelected = () => {
+        if (!selectedIds.length) return;
+        removeAllTasks(
+            { taskIds: selectedIds },
+            {
+                onSuccess: () => table.resetRowSelection(),
+            }
+        );
+    };
+
     return (
         <section className="w-full flex flex-col gap-6 pt-5">
             {/* start to search */}
-            {searchFilter}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+                {searchFilter}
+                <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={!selectedIds.length || isDeleting}
+                    onClick={onRemoveSelected}
+                >
+                    {isDeleting ? (
+                        <>
+                            <Spinner/>
+
+                            Removing..
+                        </>
+                    ) : `Delete (${selectedIds.length})`}
+                </Button>
+            </div>
             {/* end to search */}
 
             {/* <SearchSection /> */}

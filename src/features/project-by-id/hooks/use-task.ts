@@ -153,3 +153,33 @@ export const useChangeTaskPositionStatus = () => {
         })
     )
 }
+
+// Hook to remove all task
+export const useRemoveAllTasks = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+    const { id } = useParams<{ id?: string }>();
+
+    return useMutation(
+        trpc.task.removeAll.mutationOptions({
+            onSuccess: () => {
+                toast.success("Tasks  removed");
+
+                const projectId = id;
+                if (projectId) {
+                    queryClient.invalidateQueries(
+                        trpc.task.getMany.queryOptions({ projectId })
+                    );
+
+                    queryClient.invalidateQueries(
+                        trpc.task.getProjectPerformance.queryOptions({ projectId })
+                    );
+                }
+            },
+            onError: (data) => {
+                console.log("Task moved Error:", data.message);
+                toast.error(data.message);
+            },
+        })
+    )
+}
