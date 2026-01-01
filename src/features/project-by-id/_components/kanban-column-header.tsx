@@ -32,13 +32,15 @@ const statusIconMap: Record<TaskStatus, React.ReactNode> = {
 interface KanbanColumnHeaderProps {
     board: TaskStatus;
     taskCount: number;
+    nextPosition: number;
 }
 
 export const KanbanColumnHeader = ({
     board,
     taskCount,
+    nextPosition,
 }: KanbanColumnHeaderProps) => {
-    const { setOpen} = useTaskForm();
+    const { setOpen, setInitialState } = useTaskForm();
 
     const icon = statusIconMap[board];
 
@@ -51,7 +53,23 @@ export const KanbanColumnHeader = ({
                     {taskCount}
                 </div>
             </div>
-            <Button onClick={() => setOpen(true)} variant="ghost" size="icon" className="size-5">
+            <Button
+                onClick={() => {
+                    setOpen(true);
+
+                    setInitialState({
+                        name: "",
+                        description: "",
+                        status: board,
+                        dueDate: null,
+                        assigneeId: "",
+                        position: nextPosition,
+                    })
+                }}
+                variant="ghost"
+                size="icon"
+                className="size-5"
+            >
                 <PlusIcon className="size-4 text-neutral-500" />
             </Button>
         </div>

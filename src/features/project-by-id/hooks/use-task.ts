@@ -17,9 +17,16 @@ export const useCreateTask = () => {
             onSuccess: (data) => {
                 toast.success("Task created successfully");
 
-                queryClient.invalidateQueries(
-                    trpc.task.getMany.queryOptions({ projectId: data.projectId ?? id })
-                );
+                const projectId = id ?? data.projectId?.[0];
+                if (projectId) {
+                    queryClient.invalidateQueries(
+                        trpc.task.getMany.queryOptions({ projectId })
+                    );
+
+                    queryClient.invalidateQueries(
+                        trpc.task.getProjectPerformance.queryOptions({ projectId })
+                    );
+                }
             },
 
             onError: (data) => {
@@ -65,9 +72,16 @@ export const useUpdateTask = () => {
             onSuccess: (data) => {
                 toast.success(`Task "${data.name}" saved`);
 
-                queryClient.invalidateQueries(
-                    trpc.task.getMany.queryOptions({ projectId: data.projectId ?? id })
-                );
+                const projectId = id ?? data.projectId?.[0];
+                if (projectId) {
+                    queryClient.invalidateQueries(
+                        trpc.task.getMany.queryOptions({ projectId })
+                    );
+
+                    queryClient.invalidateQueries(
+                        trpc.task.getProjectPerformance.queryOptions({ projectId })
+                    );
+                }
             },
 
             onError: (data) => {
@@ -86,13 +100,17 @@ export const useRemoveTask = () => {
 
     return useMutation(
         trpc.task.remove.mutationOptions({
-            onSuccess : (data) => {
+            onSuccess: (data) => {
                 toast.success(`task "${data.name}" removed`);
 
                 const projectId = data.projectId ?? id;
                 if (projectId) {
                     queryClient.invalidateQueries(
                         trpc.task.getMany.queryOptions({ projectId })
+                    );
+
+                    queryClient.invalidateQueries(
+                        trpc.task.getProjectPerformance.queryOptions({ projectId })
                     );
                 }
 
@@ -104,4 +122,34 @@ export const useRemoveTask = () => {
             },
         })
     )
-} 
+}
+
+// Hook to update task position
+export const useChangeTaskPositionStatus = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+    const { id } = useParams<{ id?: string }>();
+
+    return useMutation(
+        trpc.task.changePosition.mutationOptions({
+            onSuccess: (data) => {
+                toast.success("Tasks reordered");
+
+                const projectId = id ?? data.projectIds?.[0];
+                if (projectId) {
+                    queryClient.invalidateQueries(
+                        trpc.task.getMany.queryOptions({ projectId })
+                    );
+
+                    queryClient.invalidateQueries(
+                        trpc.task.getProjectPerformance.queryOptions({ projectId })
+                    );
+                }
+            },
+            onError: (data) => {
+                console.log("Task moved Error:", data.message);
+                toast.error(data.message);
+            },
+        })
+    )
+}

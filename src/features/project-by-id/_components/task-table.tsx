@@ -158,7 +158,7 @@ export const columns: ColumnDef<Task>[] = [
         id: "Edit",
         header: "EDIT",
         cell: ({ row }) => (
-            <TaskActions id={row.original.id} initialData={row.original}>
+            <TaskActions initialState={row.original} initialData={row.original}>
                 <MoreHorizontalIcon className="size-4 cursor-pointer"  />
             </TaskActions>
         ),
