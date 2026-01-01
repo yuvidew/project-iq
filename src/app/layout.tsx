@@ -5,6 +5,7 @@ import { TRPCReactProvider } from "@/trpc/trpc-client-provider";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { headers } from "next/headers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,11 +52,14 @@ export const metadata: Metadata = {
 };
 
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const incomingHeaders = await headers();
+  const trpcHeaders = Object.fromEntries(incomingHeaders.entries());
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -69,7 +73,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <NuqsAdapter>
-            <TRPCReactProvider>
+            <TRPCReactProvider headers={trpcHeaders}>
               {children}
               <Toaster />
             </TRPCReactProvider>

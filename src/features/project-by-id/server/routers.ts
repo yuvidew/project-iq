@@ -15,11 +15,11 @@ export const taskRouter = router({
                 projectId: z.string(),
                 assigneeId: z.string(),
                 dueDate: z.date().optional(),
-                position : z.number()
+                position: z.number()
             })
         )
         .mutation(async ({ input }) => {
-            const { name, description, status, projectId, assigneeId, dueDate , position} =
+            const { name, description, status, projectId, assigneeId, dueDate, position } =
                 input;
 
             const project = await prisma.project.findUnique({
@@ -140,9 +140,6 @@ export const taskRouter = router({
                 }),
             ]);
 
-            const assignees = projectMembers
-                .map((pm) => pm.user)
-                .filter((u): u is NonNullable<typeof u> => Boolean(u));
 
             return {
                 tasks,
@@ -156,13 +153,47 @@ export const taskRouter = router({
         }),
 
     getOne: protectedProcedure
-        .input(z.string())
-        .query(async ({ input: taskId }) => {
-            const task = await prisma.task.findUnique({
-                where: {
-                    id: taskId,
-                },
-            });
+        .input(z.object({
+            projectId: z.string(),
+            taskId: z.string(),
+        }))
+        .query(async ({ input }) => {
+
+            const { projectId, taskId } = input;
+
+            const [task] = await Promise.all([
+                prisma.task.findUnique({
+                    where: {
+                        id: taskId,
+                    },
+                    include: {
+                        assignee: {
+                            select: {
+                                id: true,
+                                email: true,
+                                name: true,
+                                image: true,
+                            },
+                        },
+                        project: {
+                            select: {
+                                id: true,
+                                name: true,
+                                description: true,
+                                status: true,
+                                priority: true,
+                                startDate: true,
+                                endDate: true,
+                                organizationSlug: true,
+                                projectLeadEmail: true,
+                            },
+                        },
+                    },
+
+                }),
+
+            ])
+
 
             if (!task) {
                 throw new TRPCError({
@@ -333,6 +364,7 @@ export const taskRouter = router({
                 inReview: countsByStatus[TaskStatus.IN_REVIEW],
                 todo: countsByStatus[TaskStatus.TODO],
                 teamMembers,
+                project
             };
         }),
 
@@ -403,6 +435,38 @@ export const taskRouter = router({
             );
 
             return { updatedTasks, projectIds };
-        })
+        }),
+    removeAll: protectedProcedure
+        .input(
+            z.object({
+                taskIds: z.array(z.string()).min(1, "No task ids provided"),
+            })
+        )
+        .mutation(async ({ input }) => {
+            const { taskIds } = input;
 
+            const existingTasks = await prisma.task.findMany({
+                where: { id: { in: taskIds } },
+                select: { id: true },
+            });
+
+            if (existingTasks.length !== taskIds.length) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "One or more tasks were not found",
+                });
+            }
+
+            const deleted = await prisma.$transaction(async (tx) => {
+                await tx.taskMember.deleteMany({
+                    where: { taskId: { in: taskIds } },
+                });
+
+                return tx.task.deleteMany({
+                    where: { id: { in: taskIds } },
+                });
+            });
+
+            return { deletedCount: deleted.count };
+        })
 });

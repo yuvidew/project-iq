@@ -15,7 +15,7 @@ import {
     ZapIcon,
     ExternalLinkIcon,
     PencilIcon,
-    Trash2Icon
+    Trash2Icon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -48,7 +48,12 @@ import { DataKanban } from "./data-kanban";
 import { ErrorView } from "@/components/error-view";
 import { LoadingView } from "@/components/loading-view";
 import { useSuspenseProjectPerformance } from "../hooks/use-project-by-id";
-import { useChangeTaskPositionStatus, useCreateTask, useRemoveTask, useSuspenseTasks } from "../hooks/use-task";
+import {
+    useChangeTaskPositionStatus,
+    useCreateTask,
+    useRemoveTask,
+    useSuspenseTasks,
+} from "../hooks/use-task";
 import { TaskStatus } from "@/generated/prisma";
 import { useTaskParams } from "../hooks/use-taks-params";
 import { useProjectTaskSearch } from "../hooks/use-project-task-search";
@@ -69,17 +74,27 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { useRemoveTaskDialog } from "../hooks/use-remove-task-dialog";
 import { DataCalendar } from "./data-calender";
+import { useTaskDetails } from "../hooks/use-task-details";
+import { BadgeTaskStatus } from "@/components/ui/badge-task-status";
+import { DottedSeparator } from "@/components/dotted-separator";
 
 export const ProjectTaskErrorView = () => {
-    return <ErrorView message='Error loading tasks of projects' />
+    return <ErrorView message="Error loading tasks of projects" />;
 };
 
 export const ProjectTaskLoadingView = () => {
-    return <LoadingView message='Loading tasks of projects...' />
+    return <LoadingView message="Loading tasks of projects..." />;
 };
 
 interface ProjectAvatarProps {
@@ -93,7 +108,6 @@ export const ProjectAvatar = ({
     className,
     fallbackClassName,
 }: ProjectAvatarProps) => {
-
     return (
         <Avatar className={cn("size-5 rounded-md", className)}>
             <AvatarFallback
@@ -107,7 +121,6 @@ export const ProjectAvatar = ({
         </Avatar>
     );
 };
-
 
 interface TaskDateProps {
     value: Date;
@@ -166,15 +179,69 @@ export const MemberAvatar = ({
     );
 };
 
+const TaskDetail = () => {
+    const { setOpen, open, initialState } = useTaskDetails();
+    const taskStatus = initialState.status ?? TaskStatus.TODO;
+    const assigneeName =
+        initialState.assignee?.name ?? initialState.assignee?.email ?? "Unassigned";
+    const projectName = initialState.project?.name ?? "Project";
+    const dueDateValue = initialState.dueDate
+        ? new Date(initialState.dueDate)
+        : null;
+    const dueDateLabel =
+        dueDateValue && !Number.isNaN(dueDateValue.getTime())
+            ? format(dueDateValue, "MMM dd, yyyy")
+            : "No due date";
 
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent>
+                <DialogHeader className=" flex flex-col items-start">
+                    <div className="flex items-start gap-2">
+                        <DialogTitle>{initialState.name || "Task details"}</DialogTitle>
 
+                        <BadgeTaskStatus status={taskStatus} />
+                    </div>
+
+                    <DialogDescription className="text-muted-foreground text-left">
+                        {initialState.description || "No description"}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <DottedSeparator />
+                <div className="flex items-center gap-x-1.5">
+                    <MemberAvatar
+                        name={assigneeName}
+                        fallbackClassName="text-[10px]"
+                    />
+                    <div className="size-1 rounded-full bg-neutral-300" />
+                    <span className={cn("truncate text-xs")}>
+                        {dueDateLabel}
+                    </span>
+                </div>
+                <div className="flex items-center gap-x-1.5">
+                    <ProjectAvatar
+                        name={projectName}
+                        fallbackClassName="text-[10px]"
+                    />
+                    <span className="text-xs font-medium">
+                        {projectName}
+                    </span>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 const SearchSection = () => {
     const [params, setParams] = useTaskParams() as [
         ProjectsParams,
         (p: ProjectsParams) => void
     ];
-    const { searchValue, onSearchChange } = useProjectTaskSearch({ params, setParams });
+    const { searchValue, onSearchChange } = useProjectTaskSearch({
+        params,
+        setParams,
+    });
 
     const { data: membersList, isLoading } = useOrgMembers();
 
@@ -197,7 +264,7 @@ const SearchSection = () => {
             ...next,
             [key]: value as ProjectsParams[K],
         });
-    }
+    };
 
     return (
         <div className="flex items-center gap-3 ">
@@ -208,11 +275,12 @@ const SearchSection = () => {
             />
             <Select
                 value={params.status ?? "ALL"}
-                onValueChange={(val) => onUpdateFilter("status", val as ProjectsParams["status"] | "ALL")}
+                onValueChange={(val) =>
+                    onUpdateFilter("status", val as ProjectsParams["status"] | "ALL")
+                }
             >
                 <SelectTrigger className="w-[180px]">
-                    <SelectValue
-                        placeholder="All Statues" />
+                    <SelectValue placeholder="All Statues" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="ALL">All status</SelectItem>
@@ -222,10 +290,14 @@ const SearchSection = () => {
                 </SelectContent>
             </Select>
 
-
             <Select
                 value={params.assigneeId ?? "ALL"}
-                onValueChange={(val) => onUpdateFilter("assigneeId", val as ProjectsParams["assigneeId"] | "ALL")}
+                onValueChange={(val) =>
+                    onUpdateFilter(
+                        "assigneeId",
+                        val as ProjectsParams["assigneeId"] | "ALL"
+                    )
+                }
             >
                 <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="All Assignees" />
@@ -236,15 +308,16 @@ const SearchSection = () => {
                         <SelectItem value="No lead">
                             <Spinner className="text-muted-foreground" />
                         </SelectItem>
-                    ) : membersList?.map(({ email, id }) => (
-                        <SelectItem value={id}>{email}</SelectItem>
-                    ))}
+                    ) : (
+                        membersList?.map(({ email, id }) => (
+                            <SelectItem value={id}>{email}</SelectItem>
+                        ))
+                    )}
                 </SelectContent>
             </Select>
         </div>
-    )
-}
-
+    );
+};
 
 const TaskListPagination = () => {
     const { data, isFetching } = useSuspenseTasks();
@@ -255,86 +328,98 @@ const TaskListPagination = () => {
             disabled={isFetching}
             page={data.meta.page}
             totalPages={data.meta.totalPages}
-            onPageChange={(page) => setParams({
-                ...params,
-                page
-            })}
+            onPageChange={(page) =>
+                setParams({
+                    ...params,
+                    page,
+                })
+            }
         />
     );
 };
 
 const RemoveTaskDialog = () => {
-    const {open, setOpen , initialState} = useRemoveTaskDialog();
+    const { open, setOpen, initialState } = useRemoveTaskDialog();
 
-    const {mutate: onRemoveTask, isPending} = useRemoveTask();
+    const { mutate: onRemoveTask, isPending } = useRemoveTask();
 
-    const onConfirmRemove = () =>{
+    const onConfirmRemove = () => {
         onRemoveTask(
             {
-                id : initialState.id as string
+                id: initialState.id as string,
             },
             {
-                onSuccess : () => {
-                    setOpen(false)
-                }
+                onSuccess: () => {
+                    setOpen(false);
+                },
             }
-        )
-    }
+        );
+    };
 
     return (
-        <AlertDialog open = {open} >
+        <AlertDialog open={open}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Delete task "{initialState.name}"?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                        Delete task "{initialState.name}"?
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. It will permanently remove this task and its data from the project.
+                        This action cannot be undone. It will permanently remove this task
+                        and its data from the project.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel 
-                        disabled = {isPending}
+                    <AlertDialogCancel
+                        disabled={isPending}
                         onClick={() => setOpen(false)}
                     >
                         Cancel
                     </AlertDialogCancel>
-                    <AlertDialogAction 
-                        disabled = {isPending}
-                        onClick={onConfirmRemove}
-                    >
+                    <AlertDialogAction disabled={isPending} onClick={onConfirmRemove}>
                         {isPending ? (
                             <>
-                                <Spinner/>
+                                <Spinner />
                                 Removing...
                             </>
-                        ) : "Continue"}
+                        ) : (
+                            "Continue"
+                        )}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-    )
-}
+    );
+};
 
 interface TaskActionProps {
-    initialState : {id: string, name : string}
-    initialData: Task
-    children: ReactNode
+    initialState: { id: string; name: string };
+    initialData: Task;
+    children: ReactNode;
 }
 
-export const TaskActions = ({ initialState, initialData, children }: TaskActionProps) => {
-    const { setOpen , setInitialState, } = useTaskForm();
-    const {setOpen : setOpenRemoveDialog , setInitialState : setRemoveTaskInitialState} = useRemoveTaskDialog();
+export const TaskActions = ({
+    initialState,
+    initialData,
+    children,
+}: TaskActionProps) => {
+    const { setOpen, setInitialState } = useTaskForm();
+    const {
+        setOpen: setOpenRemoveDialog,
+        setInitialState: setRemoveTaskInitialState,
+    } = useRemoveTaskDialog();
+    const { setOpen: setOpenTaskDetails, setInitialState: setTaskInitialState } =
+        useTaskDetails();
 
     return (
-        <div >
-            <DropdownMenu
-                modal={false}
-            >
+        <div>
+            <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem
                         className="font-medium p-2.5"
                         onClick={() => {
-                            //TODO: create a task detail page
+                            setOpenTaskDetails(true);
+                            setTaskInitialState(initialData);
                         }}
                     >
                         <ExternalLinkIcon className="size-4 mr-2 stroke-2" />
@@ -352,8 +437,8 @@ export const TaskActions = ({ initialState, initialData, children }: TaskActionP
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         onClick={() => {
-                            setOpenRemoveDialog(true)
-                            setRemoveTaskInitialState(initialState)
+                            setOpenRemoveDialog(true);
+                            setRemoveTaskInitialState(initialState);
                         }}
                         // disabled={isPending}
                         className="text-amber-700 focus:text-amber-700 font-medium p-2.5"
@@ -364,14 +449,12 @@ export const TaskActions = ({ initialState, initialData, children }: TaskActionP
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>
-    )
-
-}
+    );
+};
 
 export const TaskTabs = () => {
     const { data } = useSuspenseTasks();
     const { mutate: onChangeTaskPositionStatus } = useChangeTaskPositionStatus();
-
 
     return (
         <Tabs defaultValue="task" className="w-full ">
@@ -403,7 +486,7 @@ export const TaskTabs = () => {
                 />
             </TabsContent>
             <TabsContent value="calender">
-                <DataCalendar data = {data.tasks} />
+                <DataCalendar data={data.tasks} />
             </TabsContent>
         </Tabs>
     );
@@ -427,9 +510,9 @@ export const ProjectIdView = () => {
                             onClick={() => navigate.back()}
                         />
 
-                        <h4 className=" text-xl">Project name</h4>
+                        <h4 className=" text-xl">{data.project.name}</h4>
 
-                        <BadgeText status="ACTIVE" />
+                        <BadgeText status={data.project.status} />
                     </div>
                     <Button onClick={() => setOpen(true)}>
                         <PlusIcon className=" size-5" /> New Task
@@ -500,8 +583,12 @@ export const ProjectIdView = () => {
             {/* end to create new task */}
 
             {/* start to remove task dialog */}
-            <RemoveTaskDialog/>
+            <RemoveTaskDialog />
             {/* end to remove task dialog */}
+
+            {/* start to task details */}
+            <TaskDetail />
+            {/* end to task details */}
         </>
     );
 };

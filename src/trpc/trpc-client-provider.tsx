@@ -41,11 +41,19 @@ function getUrl() {
     })();
     return `${base}/api/trpc`;
 }
-export function TRPCReactProvider(
-    props: Readonly<{
-        children: React.ReactNode;
-    }>,
-) {
+type TRPCReactProviderProps = Readonly<{
+    children: React.ReactNode;
+    /**
+     * Headers from the incoming request (server render only).
+     * Ensures SSR queries forward cookies for auth.
+     */
+    headers?: HeadersInit;
+}>;
+
+export function TRPCReactProvider({
+    children,
+    headers: initialHeaders,
+}: TRPCReactProviderProps) {
     // NOTE: Avoid useState when initializing the query client if you don't
     //       have a suspense boundary between this and the code that may
     //       suspend because React will throw away the client on the initial
@@ -63,7 +71,18 @@ export function TRPCReactProvider(
                     : httpBatchLink({
                         transformer: superjson,
                         url: getUrl(),
-                        fetch: includeCredentialsFetch,
+                        // Forward incoming request headers (cookies) during SSR
+                        headers() {
+                            return initialHeaders ?? {};
+                        },
+                        fetch: (input, init) =>
+                            includeCredentialsFetch(input, {
+                                ...init,
+                                headers: {
+                                    ...(init?.headers ?? {}),
+                                    ...(initialHeaders ?? {}),
+                                },
+                            }),
                     }),
             ],
         }),
@@ -71,7 +90,7 @@ export function TRPCReactProvider(
     return (
         <QueryClientProvider client={queryClient}>
             <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-                {props.children}
+                {children}
             </TRPCProvider>
         </QueryClientProvider>
     );
