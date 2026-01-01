@@ -13,6 +13,9 @@ import {
     TriangleAlertIcon,
     UsersIcon,
     ZapIcon,
+    ExternalLinkIcon,
+    PencilIcon,
+    Trash2Icon
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -21,13 +24,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { cn } from "@/lib/utils";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { TaskTable } from "./task-table";
 import { TaskByStatus } from "./task-by-status";
 import { TaskByType } from "./task-by-type";
@@ -37,7 +50,7 @@ import { DataKanban } from "./data-kanban";
 import { ErrorView } from "@/components/error-view";
 import { LoadingView } from "@/components/loading-view";
 import { useSuspenseProjectPerformance } from "../hooks/use-project-by-id";
-import { useSuspenseTasks } from "../hooks/use-task";
+import { useCreateTask, useSuspenseTasks } from "../hooks/use-task";
 import { TaskStatus } from "@/generated/prisma";
 import { useTaskParams } from "../hooks/use-taks-params";
 import { useProjectTaskSearch } from "../hooks/use-project-task-search";
@@ -46,6 +59,9 @@ import { PAGINATION } from "@/lib/config";
 import { SearchBox } from "@/components/search_box";
 import { Spinner } from "@/components/ui/spinner";
 import { Pagination } from "@/components/ui/pagination";
+import { Task } from "../types";
+import { ReactNode } from "react";
+import { differenceInDays, format } from "date-fns";
 
 export const ProjectTaskErrorView = () => {
     return <ErrorView message='Error loading tasks of projects' />
@@ -54,6 +70,94 @@ export const ProjectTaskErrorView = () => {
 export const ProjectTaskLoadingView = () => {
     return <LoadingView message='Loading tasks of projects...' />
 };
+
+interface ProjectAvatarProps {
+    name: string;
+    className?: string;
+    fallbackClassName?: string;
+}
+
+export const ProjectAvatar = ({
+    name,
+    className,
+    fallbackClassName,
+}: ProjectAvatarProps) => {
+
+    return (
+        <Avatar className={cn("size-5 rounded-md", className)}>
+            <AvatarFallback
+                className={cn(
+                    "text-white bg-blue-600 font-semibold text-sm uppercase rounded-md",
+                    fallbackClassName
+                )}
+            >
+                {name[0]}
+            </AvatarFallback>
+        </Avatar>
+    );
+};
+
+
+
+interface TaskDateProps {
+    value: Date;
+    className?: string;
+}
+
+export const TaskDate = ({ value, className }: TaskDateProps) => {
+    const today = new Date();
+    const endDate = new Date(value);
+    const diffInDays = differenceInDays(endDate, today);
+
+    let textColor = "text-muted-foreground";
+
+    if (diffInDays <= 3) {
+        textColor = "text-red-500";
+    } else if (diffInDays <= 7) {
+        textColor = "text-orange-500";
+    } else if (diffInDays <= 14) {
+        textColor = "text-yellow-500";
+    }
+
+    return (
+        <div className={textColor}>
+            <span className={cn("truncate", className)}>{format(value, "PPP")}</span>
+        </div>
+    );
+};
+
+
+
+interface MemberAvatarProps {
+    name: string;
+    className?: string;
+    fallbackClassName?: string;
+}
+
+export const MemberAvatar = ({
+    name,
+    className,
+    fallbackClassName,
+}: MemberAvatarProps) => {
+    return (
+        <Avatar
+            className={cn(
+                "size-5 transition border border-neutral-300 rounded-full",
+                className
+            )}
+        >
+            <AvatarFallback
+                className={cn(
+                    "bg-neutral-200 font-medium text-neutral-500 flex items-center justify-center",
+                    fallbackClassName
+                )}
+            >
+                {name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+        </Avatar>
+    );
+};
+
 
 const AnalyticsComp = () => {
     return (
@@ -213,6 +317,52 @@ const TaskListPagination = () => {
             })}
         />
     );
+};
+
+type TaskActionProps = {
+    id: string,
+    initialData: Task
+    children: ReactNode
+}
+
+export const TaskActions = ({ id, initialData, children }: TaskActionProps) => {
+    const { setOpen, setInitialState, } = useTaskForm();
+
+    return (
+        <div >
+            <DropdownMenu
+                modal={false}
+            >
+                <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                        className="font-medium p-2.5"
+                    >
+                        <ExternalLinkIcon className="size-4 mr-2 stroke-2" />
+                        Task Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onClick={() => {
+                            setOpen(true);
+                            setInitialState(initialData);
+                        }}
+                        className="font-medium p-2.5"
+                    >
+                        <PencilIcon className="size-4 mr-2 stroke-2" />
+                        Edit Task
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+
+                        // disabled={isPending}
+                        className="text-amber-700 focus:text-amber-700 font-medium p-2.5"
+                    >
+                        <Trash2Icon className="size-4 mr-2 stroke-2" />
+                        Delete Task
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    )
 
 }
 
@@ -245,12 +395,12 @@ export const TaskTabs = () => {
             <TabsContent value="task">
                 <TaskTable
                     searchFilter={<SearchSection />}
-                    pagination={<TaskListPagination/>}
+                    pagination={<TaskListPagination />}
                     taskList={data.tasks}
                 />
             </TabsContent>
             <TabsContent value="kanban">
-                <DataKanban />
+                <DataKanban data={data.tasks} />
             </TabsContent>
             <TabsContent value="calender">TODO: create calendar comp</TabsContent>
             <TabsContent value="analytics">

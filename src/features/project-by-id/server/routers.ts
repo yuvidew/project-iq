@@ -103,6 +103,19 @@ export const taskRouter = router({
                                 image: true,
                             },
                         },
+                        project: {
+                            select: {
+                                id: true,
+                                name: true,
+                                description: true,
+                                status: true,
+                                priority: true,
+                                startDate: true,
+                                endDate: true,
+                                organizationSlug: true,
+                                projectLeadEmail: true,
+                            },
+                        },
                     },
                 }),
                 prisma.projectMember.findMany({

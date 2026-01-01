@@ -263,8 +263,8 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                                                 <SelectItem value="No lead">
                                                     <Spinner className="text-muted-foreground" />
                                                 </SelectItem>
-                                            ) : membersList?.map(({email}) => (
-                                                <SelectItem value={email}>{email}</SelectItem>
+                                            ) : membersList?.map(({email, id}) => (
+                                                <SelectItem key={id} value={email}>{email}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
