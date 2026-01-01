@@ -50,7 +50,7 @@ import { DataKanban } from "./data-kanban";
 import { ErrorView } from "@/components/error-view";
 import { LoadingView } from "@/components/loading-view";
 import { useSuspenseProjectPerformance } from "../hooks/use-project-by-id";
-import { useCreateTask, useSuspenseTasks } from "../hooks/use-task";
+import { useChangeTaskPositionStatus, useCreateTask, useRemoveTask, useSuspenseTasks } from "../hooks/use-task";
 import { TaskStatus } from "@/generated/prisma";
 import { useTaskParams } from "../hooks/use-taks-params";
 import { useProjectTaskSearch } from "../hooks/use-project-task-search";
@@ -59,9 +59,21 @@ import { PAGINATION } from "@/lib/config";
 import { SearchBox } from "@/components/search_box";
 import { Spinner } from "@/components/ui/spinner";
 import { Pagination } from "@/components/ui/pagination";
-import { Task } from "../types";
+import { ProjectsParams, Task } from "../types";
 import { ReactNode } from "react";
 import { differenceInDays, format } from "date-fns";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useRemoveTaskDialog } from "../hooks/use-remove-task-dialog";
 
 export const ProjectTaskErrorView = () => {
     return <ErrorView message='Error loading tasks of projects' />
@@ -98,7 +110,6 @@ export const ProjectAvatar = ({
 };
 
 
-
 interface TaskDateProps {
     value: Date;
     className?: string;
@@ -125,8 +136,6 @@ export const TaskDate = ({ value, className }: TaskDateProps) => {
         </div>
     );
 };
-
-
 
 interface MemberAvatarProps {
     name: string;
@@ -218,12 +227,7 @@ const AnalyticsComp = () => {
     );
 };
 
-type ProjectsParams = {
-    search: string;
-    page: number;
-    status?: TaskStatus;
-    assigneeId?: string;
-};
+
 
 const SearchSection = () => {
     const [params, setParams] = useTaskParams() as [
@@ -319,14 +323,66 @@ const TaskListPagination = () => {
     );
 };
 
-type TaskActionProps = {
-    id: string,
+const RemoveTaskDialog = () => {
+    const {open, setOpen , initialState} = useRemoveTaskDialog();
+
+    const {mutate: onRemoveTask, isPending} = useRemoveTask();
+
+    const onConfirmRemove = () =>{
+        onRemoveTask(
+            {
+                id : initialState.id as string
+            },
+            {
+                onSuccess : () => {
+                    setOpen(false)
+                }
+            }
+        )
+    }
+
+    return (
+        <AlertDialog open = {open} >
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete task "{initialState.name}"?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. It will permanently remove this task and its data from the project.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel 
+                        disabled = {isPending}
+                        onClick={() => setOpen(false)}
+                    >
+                        Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction 
+                        disabled = {isPending}
+                        onClick={onConfirmRemove}
+                    >
+                        {isPending ? (
+                            <>
+                                <Spinner/>
+                                Removing...
+                            </>
+                        ) : "Continue"}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    )
+}
+
+interface TaskActionProps {
+    initialState : {id: string, name : string}
     initialData: Task
     children: ReactNode
 }
 
-export const TaskActions = ({ id, initialData, children }: TaskActionProps) => {
-    const { setOpen, setInitialState, } = useTaskForm();
+export const TaskActions = ({ initialState, initialData, children }: TaskActionProps) => {
+    const { setOpen , setInitialState, } = useTaskForm();
+    const {setOpen : setOpenRemoveDialog , setInitialState : setRemoveTaskInitialState} = useRemoveTaskDialog();
 
     return (
         <div >
@@ -352,7 +408,10 @@ export const TaskActions = ({ id, initialData, children }: TaskActionProps) => {
                         Edit Task
                     </DropdownMenuItem>
                     <DropdownMenuItem
-
+                        onClick={() => {
+                            setOpenRemoveDialog(true)
+                            setRemoveTaskInitialState(initialState)
+                        }}
                         // disabled={isPending}
                         className="text-amber-700 focus:text-amber-700 font-medium p-2.5"
                     >
@@ -368,6 +427,9 @@ export const TaskActions = ({ id, initialData, children }: TaskActionProps) => {
 
 export const TaskTabs = () => {
     const { data } = useSuspenseTasks();
+    const { mutate: onChangeTaskPositionStatus } = useChangeTaskPositionStatus();
+
+
     return (
         <Tabs defaultValue="task" className="w-full ">
             <TabsList className="p-0 rounded-sm">
@@ -400,7 +462,10 @@ export const TaskTabs = () => {
                 />
             </TabsContent>
             <TabsContent value="kanban">
-                <DataKanban data={data.tasks} />
+                <DataKanban
+                    data={data.tasks}
+                    onChange={(updates) => onChangeTaskPositionStatus({ updates })}
+                />
             </TabsContent>
             <TabsContent value="calender">TODO: create calendar comp</TabsContent>
             <TabsContent value="analytics">
@@ -497,7 +562,13 @@ export const ProjectIdView = () => {
                 {/* end to tabs */}
             </main>
 
+            {/* start to create new task */}
             <CreateNewTaskForm />
+            {/* end to create new task */}
+
+            {/* start to remove task dialog */}
+            <RemoveTaskDialog/>
+            {/* end to remove task dialog */}
         </>
     );
 };

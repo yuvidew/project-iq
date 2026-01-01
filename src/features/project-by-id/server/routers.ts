@@ -39,6 +39,9 @@ export const taskRouter = router({
                 select: { position: true },
             });
 
+            const defaultPosition = (lastTask?.position ?? 0) + 1000;
+            const finalPosition = position > 0 ? position : defaultPosition;
+
             return await prisma.task.create({
                 data: {
                     name,
@@ -47,7 +50,7 @@ export const taskRouter = router({
                     project: { connect: { id: projectId } },
                     assignee: { connect: { id: assigneeId } },
                     dueDate,
-                    position: (lastTask?.position ?? position) + 1,
+                    position: finalPosition,
                 },
             });
         }),
@@ -91,7 +94,11 @@ export const taskRouter = router({
                 prisma.task.count({ where }),
                 prisma.task.findMany({
                     where,
-                    orderBy: { createdAt: "desc" },
+                    orderBy: [
+                        { status: "asc" },
+                        { position: "asc" },
+                        { createdAt: "desc" },
+                    ],
                     skip,
                     take: pageSize,
                     include: {
@@ -328,5 +335,74 @@ export const taskRouter = router({
                 teamMembers,
             };
         }),
+
+    changePosition: protectedProcedure
+        .input(
+            z.object({
+                updates: z.array(
+                    z.object({
+                        position: z.number(),
+                        id: z.string(),
+                        status: z.nativeEnum(TaskStatus),
+                    })
+                ).min(1, "No updates provided"),
+            })
+        )
+        .mutation(async ({ input }) => {
+            const { updates } = input;
+            const TEMP_OFFSET = 1_000_000;
+
+            const existingTasks = await prisma.task.findMany({
+                where: { id: { in: updates.map((u) => u.id) } },
+                select: { id: true },
+            });
+
+            if (existingTasks.length !== updates.length) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "One or more tasks were not found",
+                });
+            }
+
+            const updatedTasks = await prisma.$transaction(async (tx) => {
+                // First, move tasks to temporary positions to avoid unique constraint clashes.
+                await Promise.all(
+                    updates.map(({ id, position, status }) =>
+                        tx.task.update({
+                            where: { id },
+                            data: {
+                                status,
+                                position: position + TEMP_OFFSET,
+                            },
+                        })
+                    )
+                );
+
+                // Then, set the final positions.
+                const finalized = await Promise.all(
+                    updates.map(({ id, position }) =>
+                        tx.task.update({
+                            where: { id },
+                            data: { position },
+                            select: {
+                                id: true,
+                                name: true,
+                                projectId: true,
+                                status: true,
+                                position: true,
+                            },
+                        })
+                    )
+                );
+
+                return finalized;
+            });
+
+            const projectIds = Array.from(
+                new Set(updatedTasks.map((task) => task.projectId))
+            );
+
+            return { updatedTasks, projectIds };
+        })
 
 });

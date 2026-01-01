@@ -29,3 +29,12 @@ export type Task = {
     dueDate: Date | null;
     position: number;
 }
+
+export type ProjectsParams = {
+    search: string;
+    page: number;
+    status?: TaskStatus;
+    assigneeId?: string;
+};
+
+
