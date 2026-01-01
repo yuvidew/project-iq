@@ -42,8 +42,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TaskTable } from "./task-table";
-import { TaskByStatus } from "./task-by-status";
-import { TaskByType } from "./task-by-type";
 import { CreateNewTaskForm } from "./create-new-task";
 import { useTaskForm } from "../hooks/use-task-form";
 import { DataKanban } from "./data-kanban";
@@ -74,6 +72,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useRemoveTaskDialog } from "../hooks/use-remove-task-dialog";
+import { DataCalendar } from "./data-calender";
 
 export const ProjectTaskErrorView = () => {
     return <ErrorView message='Error loading tasks of projects' />
@@ -167,65 +166,6 @@ export const MemberAvatar = ({
     );
 };
 
-
-const AnalyticsComp = () => {
-    return (
-        <section className=" w-full  flex flex-col gap-3 py-4">
-            {/* start to complete count*/}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 ">
-                <Card className=" rounded-sm">
-                    <CardContent className="flex items-center justify-between gap-2">
-                        <div className="flex flex-col gap-2">
-                            <h3 className="text-green-500 text-sm font-medium">
-                                Completed Rate
-                            </h3>
-                            <p className="text-4xl font-bold ">0</p>
-                        </div>
-                        <CheckCircleIcon className={`size-5 text-green-500`} />
-                    </CardContent>
-                </Card>
-
-                <Card className=" rounded-sm">
-                    <CardContent className="flex items-center justify-between gap-2">
-                        <div className="flex flex-col gap-2">
-                            <h3 className="text-blue-500 text-sm font-medium">Total Task</h3>
-                            <p className="text-4xl font-bold ">0</p>
-                        </div>
-                        <ClockIcon className={`size-5 text-blue-500`} />
-                    </CardContent>
-                </Card>
-
-                <Card className=" rounded-sm">
-                    <CardContent className="flex items-center justify-between gap-2">
-                        <div className="flex flex-col gap-2">
-                            <h3 className="text-red-500 text-sm font-medium">Overdue task</h3>
-                            <p className="text-4xl font-bold ">0</p>
-                        </div>
-                        <TriangleAlertIcon className={`size-5 text-red-500`} />
-                    </CardContent>
-                </Card>
-
-                <Card className=" rounded-sm">
-                    <CardContent className="flex items-center justify-between gap-2">
-                        <div className="flex flex-col gap-2 ">
-                            <h3 className="text-indigo-400 text-sm font-medium">Team Size</h3>
-                            <p className="text-4xl font-bold ">0</p>
-                        </div>
-                        <UsersIcon className={`size-5 text-indigo-500`} />
-                    </CardContent>
-                </Card>
-            </div>
-            {/* end to complete count*/}
-
-            {/* start to chart bars */}
-            <div className=" grid lg:grid-cols-2 gap-3">
-                <TaskByStatus />
-                <TaskByType />
-            </div>
-            {/* end to chart bars */}
-        </section>
-    );
-};
 
 
 
@@ -393,6 +333,9 @@ export const TaskActions = ({ initialState, initialData, children }: TaskActionP
                 <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem
                         className="font-medium p-2.5"
+                        onClick={() => {
+                            //TODO: create a task detail page
+                        }}
                     >
                         <ExternalLinkIcon className="size-4 mr-2 stroke-2" />
                         Task Details
@@ -445,14 +388,6 @@ export const TaskTabs = () => {
                     <CalendarIcon className=" size-4" />
                     Calendar
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className=" px-5">
-                    <ChartColumnIcon className=" size-4" />
-                    Analytics
-                </TabsTrigger>
-                <TabsTrigger value="setting" className=" px-5">
-                    <SettingsIcon className=" size-4" />
-                    Setting
-                </TabsTrigger>
             </TabsList>
             <TabsContent value="task">
                 <TaskTable
@@ -461,17 +396,15 @@ export const TaskTabs = () => {
                     taskList={data.tasks}
                 />
             </TabsContent>
-            <TabsContent value="kanban">
+            <TabsContent value="kanban" className="bg-card">
                 <DataKanban
                     data={data.tasks}
                     onChange={(updates) => onChangeTaskPositionStatus({ updates })}
                 />
             </TabsContent>
-            <TabsContent value="calender">TODO: create calendar comp</TabsContent>
-            <TabsContent value="analytics">
-                <AnalyticsComp />
+            <TabsContent value="calender">
+                <DataCalendar data = {data.tasks} />
             </TabsContent>
-            <TabsContent value="setting">Change your password here.</TabsContent>
         </Tabs>
     );
 };
