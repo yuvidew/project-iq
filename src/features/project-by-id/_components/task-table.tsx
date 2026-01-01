@@ -37,16 +37,22 @@ import { ReactNode, useState } from "react"
 import { format } from 'date-fns';
 import { Task } from "../types"
 import { TaskStatus } from "@/generated/prisma"
-import { SquarePenIcon } from "lucide-react";
+import { MoreHorizontalIcon, SquarePenIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTaskForm } from "../hooks/use-task-form";
+import { TaskActions } from "./project-by-id";
 
-
-
-const EditTask = () => {
-    const { setOpen } = useTaskForm()
+const EditTask = ({ task }: { task: Task }) => {
+    const { setOpen, setInitialState } = useTaskForm();
     return (
-        <Button onClick={() => setOpen(true)} variant={"ghost"} size={"icon"} >
+        <Button
+            onClick={() => {
+                setInitialState(task);
+                setOpen(true);
+            }}
+            variant={"ghost"}
+            size={"icon"}
+        >
             <SquarePenIcon />
         </Button>
     )
@@ -151,8 +157,10 @@ export const columns: ColumnDef<Task>[] = [
     {
         id: "Edit",
         header: "EDIT",
-        cell: () => (
-            <EditTask />
+        cell: ({ row }) => (
+            <TaskActions id={row.original.id} initialData={row.original}>
+                <MoreHorizontalIcon className="size-4 cursor-pointer"  />
+            </TaskActions>
         ),
         enableSorting: false,
         enableHiding: false,
@@ -161,11 +169,11 @@ export const columns: ColumnDef<Task>[] = [
 
 interface Props {
     taskList: Task[],
-    searchFilter : ReactNode;
-    pagination : ReactNode;
+    searchFilter: ReactNode;
+    pagination: ReactNode;
 }
 
-export const TaskTable = ({ taskList , searchFilter, pagination }: Props) => {
+export const TaskTable = ({ taskList, searchFilter, pagination }: Props) => {
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
         []
@@ -196,7 +204,7 @@ export const TaskTable = ({ taskList , searchFilter, pagination }: Props) => {
     return (
         <section className="w-full flex flex-col gap-6 pt-5">
             {/* start to search */}
-                {searchFilter}
+            {searchFilter}
             {/* end to search */}
 
             {/* <SearchSection /> */}

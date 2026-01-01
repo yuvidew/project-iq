@@ -61,7 +61,7 @@ export const useUpdateTask = () => {
     const { id } = useParams<{ id?: string }>();
 
     return useMutation(
-        trpc.task.create.mutationOptions({
+        trpc.task.update.mutationOptions({
             onSuccess: (data) => {
                 toast.success(`Task "${data.name}" saved`);
 

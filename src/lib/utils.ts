@@ -12,3 +12,10 @@ export const fileToBase64 = (file: File): Promise<string> => {
     reader.readAsDataURL(file);
   });
 }
+
+export function snakeCaseToTitleCase(str: string) {
+  return str
+    .toLocaleLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}

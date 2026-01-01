@@ -32,11 +32,12 @@ import {
 } from "@/components/ui/select";
 import { DatePicker } from '@/components/ui/date-picker';
 import { useTaskForm } from "../hooks/use-task-form";
-import { useCreateTask } from "../hooks/use-task";
+import { useCreateTask, useUpdateTask } from "../hooks/use-task";
 import { useParams } from "next/navigation";
 import { TaskStatus } from "@/generated/prisma";
 import { Spinner } from "@/components/ui/spinner";
 import { useOrgMembers } from "@/features/organization-members/hooks/use-organization-members";
+import { useEffect } from "react";
 
 const CreateNewTaskSchema = z.object({
     name: z.string().min(4, {
@@ -52,23 +53,63 @@ type CreateNewTaskValue = z.infer<typeof CreateNewTaskSchema>;
 
 
 export const CreateNewTaskForm = () => {
-    const { open, setOpen } = useTaskForm();
-    const { mutate: onCreateTask, isPending } = useCreateTask()
+    const { open, setOpen, initialState , reset} = useTaskForm();
+
+    const { mutate: onCreateTask, isPending } = useCreateTask();
+    const { mutate: onUpdateTask, isPending: isUpdating } = useUpdateTask();
+
     const { data: membersList, isLoading } = useOrgMembers();
 
     const { id } = useParams<{ id: string }>();
     const form = useForm<CreateNewTaskValue>({
         resolver: zodResolver(CreateNewTaskSchema),
         defaultValues: {
-            name: "",
-            description: "",
-            status: "TODO",
-            assigneeId: "unassigned",
-            due_date: undefined
+            name: initialState?.name || "",
+            description: initialState?.description || "",
+            status: initialState?.status || "TODO",
+            assigneeId: initialState?.assigneeId || "unassigned",
+            due_date: initialState?.dueDate || undefined
         }
     });
 
+    useEffect(() => {
+        form.reset({
+            name: initialState?.name || "",
+            description: initialState?.description || "",
+            status: initialState?.status || "TODO",
+            assigneeId: initialState?.assigneeId || "unassigned",
+            due_date: initialState?.dueDate || undefined,
+        });
+    }, [initialState, form]);
+
+    const isUpdateForm = Boolean(initialState?.id);
+    const isSubmitting = isPending || isUpdating;
+
     const onSubmit = (values: CreateNewTaskValue) => {
+        const taskId = initialState?.id;
+
+        if (taskId) {
+            onUpdateTask(
+                {
+                    id: taskId,
+                    name: values.name,
+                    description: values.description,
+                    status: values.status,
+                    assigneeId: values.assigneeId,
+                    projectId: id,
+                    dueDate: values.due_date,
+                },
+                {
+                    onSuccess: () => {
+                        form.reset();
+                        reset();
+                        setOpen(false);
+                    }
+                },
+            );
+
+            return
+        }
         onCreateTask(
             {
                 name: values.name,
@@ -92,7 +133,9 @@ export const CreateNewTaskForm = () => {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className=' flex flex-col gap-6'>
                 <DialogHeader>
-                    <DialogTitle>Create new Task</DialogTitle>
+                    <DialogTitle>
+                        {isUpdateForm ? "Update Task" : "Create new Task"}
+                    </DialogTitle>
                     <DialogDescription className=' hidden'></DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -174,8 +217,8 @@ export const CreateNewTaskForm = () => {
                                                     <SelectItem value="No lead">
                                                         <Spinner className="text-muted-foreground" />
                                                     </SelectItem>
-                                                ) : membersList?.map(({ email , id}) => (
-                                                    <SelectItem value={id}>{email}</SelectItem>
+                                                ) : membersList?.map(({ email, id }) => (
+                                                    <SelectItem key={id} value={id}>{email}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -205,19 +248,18 @@ export const CreateNewTaskForm = () => {
                         />
 
                         <div className="flex justify-end gap-2">
-                            <DialogClose asChild disabled = {isPending}>
+                            <DialogClose asChild disabled={isSubmitting}>
                                 <Button type="button" variant="secondary" >
                                     Cancel
                                 </Button>
                             </DialogClose>
-                            <Button type="submit" disabled = {isPending}>
-                                {isPending ? (
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? (
                                     <>
                                         <Spinner />
-
-                                        Creating...
+                                        {isUpdating ? "Saving..." : "Creating..."}
                                     </>
-                                ) : "Create Task"}
+                                ) : isUpdateForm ? "Update Task" : "Create Task"}
                             </Button>
                         </div>
                     </form>

@@ -1,23 +1,35 @@
 import { create } from "zustand";
 import { Task } from "../types";
 
-type TaskFrom = {
+type TaskForm = {
     open: boolean;
     setOpen: (value: boolean) => void;
-    initialState?: Task
+    initialState: Partial<Task>;
+    setInitialState: (value: Partial<Task>) => void;
+    reset: () => void;
 };
 
-export const useTaskForm = create<TaskFrom>((set) => ({
+const defaultInitialState: Partial<Task> = {
+    name: "",
+    description: "",
+    status: "TODO",
+    dueDate: null,
+    assigneeId: "",
+    position: 0,
+};
+
+export const useTaskForm = create<TaskForm>((set) => ({
     open: false,
-    setOpen: (value) => set({
-        open: value
+    setOpen: (value) => set({ open: value }),
+    initialState: defaultInitialState,
+    setInitialState: (value) => set({
+        initialState: {
+            ...defaultInitialState,
+            ...value,
+        },
     }),
-    initialState: {
-        name: "",
-        description: "",
-        status: "TODO",
-        dueDate: null,
-        assigneeId : "",
-        position : 0
-    },
-})) 
+    reset: () => set({
+        initialState: defaultInitialState,
+        open: false,
+    }),
+}));

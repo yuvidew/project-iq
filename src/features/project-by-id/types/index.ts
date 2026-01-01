@@ -1,4 +1,4 @@
-import { TaskStatus } from "@/generated/prisma";
+import { ProjectPriority, ProjectStatus, TaskStatus } from "@/generated/prisma";
 
 export type Task = {
     description: string | null;
@@ -15,6 +15,17 @@ export type Task = {
         name: string | null;
         image: string | null;
     } | null;
+    project: {
+        id: string;
+        name: string;
+        description: string | null;
+        status: ProjectStatus;
+        priority: ProjectPriority;
+        startDate: Date | null;
+        endDate: Date | null;
+        organizationSlug: string;
+        projectLeadEmail: string | null;
+    };
     dueDate: Date | null;
     position: number;
 }
