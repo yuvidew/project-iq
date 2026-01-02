@@ -107,13 +107,28 @@ export const projectRouter = router({
                 include: {
                     organization: true,
                     projectLead: true,
+                    members: {
+                        select: {
+                            user: {
+                                select: { email: true },
+                            },
+                        },
+                    },
                     _count: { select: { members: true } },
                 },
             }),
         ]);
 
+        const projectsWithMemberEmails = projects.map((project) => ({
+            ...project,
+            members: project.members
+                .map(({ user }) => user?.email)
+                .filter((email): email is string => Boolean(email))
+                .map((email) => ({ email })),
+        }));
+
         return {
-            projects,
+            projects: projectsWithMemberEmails,
             meta: {
                 page,
                 pageSize,

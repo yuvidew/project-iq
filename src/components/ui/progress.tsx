@@ -4,10 +4,11 @@ import * as React from "react"
 import * as ProgressPrimitive from "@radix-ui/react-progress"
 
 import { cn } from "@/lib/utils"
+import { ProjectStatus } from "@/generated/prisma"
 
-type BadgeStatus = "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "ACTIVE"
 
-const statusStyles: Record<BadgeStatus, { label: string; className: string }> = {
+
+const statusStyles: Record<ProjectStatus, { label: string; className: string }> = {
   PLANNING: {
     label: "Planning",
     className: "bg-amber-100 text-amber-800",
@@ -31,7 +32,7 @@ const statusStyles: Record<BadgeStatus, { label: string; className: string }> = 
 }
 
 type ProgressProps = React.ComponentProps<typeof ProgressPrimitive.Root> & {
-  status?: BadgeStatus
+  status?: ProjectStatus
 }
 
 function Progress({ className, value, status = "ACTIVE", ...props }: ProgressProps) {

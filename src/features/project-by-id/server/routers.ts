@@ -1,6 +1,7 @@
 import { Prisma, TaskStatus } from "@/generated/prisma";
 import { PAGINATION } from "@/lib/config";
 import prisma from "@/lib/db";
+import { updateProjectStatus } from "@/server/helpers/updateProjectStatus";
 import { protectedProcedure, router } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
@@ -202,6 +203,8 @@ export const taskRouter = router({
                 });
             };
 
+            await updateProjectStatus(projectId);
+
             return task;
         }),
     update: protectedProcedure
@@ -276,6 +279,8 @@ export const taskRouter = router({
                 });
             });
 
+            await updateProjectStatus(projectId);
+
             return updatedTask;
         }),
 
@@ -304,6 +309,8 @@ export const taskRouter = router({
                         taskId: id
                     }
                 });
+
+                await updateProjectStatus(task.projectId);
 
                 return tx.task.delete({ where: { id } })
             });
@@ -433,6 +440,8 @@ export const taskRouter = router({
             const projectIds = Array.from(
                 new Set(updatedTasks.map((task) => task.projectId))
             );
+
+            await Promise.all(projectIds.map(updateProjectStatus));
 
             return { updatedTasks, projectIds };
         }),

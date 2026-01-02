@@ -16,18 +16,42 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
-import { PackageOpenIcon } from "lucide-react";
+import { ExternalLinkIcon, PackageOpenIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import { ErrorView } from "@/components/error-view";
 import { LoadingView } from "@/components/loading-view";
-import { useSuspenseProjects } from "../hooks/use-projects";
+import { useRemoveProject, useSuspenseProjects } from "../hooks/use-projects";
 import { ProjectCard } from "@/components/project-card";
 import { useProjectsParams } from "../hooks/use-projects-params";
 import { useProjectSearch } from "../hooks/use-project-search";
 import { PAGINATION } from "@/lib/config";
+import { ProjectStatus } from "@/generated/prisma";
+import { Button } from "@/components/ui/button";
+import { useProjectForm } from "../hooks/use-project-from";
+import { Project } from "../types";
+import { useRemoveProjectDialog } from "../hooks/use-remove-project-form";
+import { Spinner } from "@/components/ui/spinner";
 
 export const ProjectErrorView = () => {
     return <ErrorView message='Error loading projects' />
@@ -43,6 +67,79 @@ export const ProjectsSearch = () => {
     );
 };
 
+export const statusStyles: Record<
+    ProjectStatus,
+    { value: number }
+> = {
+    PLANNING: {
+        value: 10,
+    },
+    ACTIVE: {
+        value: 30,
+    },
+    IN_PROGRESS: {
+        value: 60,
+    },
+    ON_HOLD: {
+        value: 40,
+    },
+    COMPLETED: {
+        value: 100,
+    },
+};
+
+const RemoveProjectDialog = () => {
+    const { open, setOpen, initialState } = useRemoveProjectDialog();
+
+    const { mutate: onRemoveProject, isPending } = useRemoveProject();
+
+    
+    const onConfirmRemove = () => {
+        onRemoveProject(
+            {
+                id: initialState.id as string,
+            },
+            {
+                onSuccess: () => {
+                    setOpen(false);
+                },
+            }
+        );
+    };
+
+    return (
+        <AlertDialog open={open}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
+                        Delete Project "{initialState.name}"?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. Deleting this project will remove all tasks and membership data associated with it.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel
+                        disabled={isPending}
+                        onClick={() => setOpen(false)}
+                    >
+                        Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction disabled={isPending} onClick={onConfirmRemove}>
+                        {isPending ? (
+                            <>
+                                <Spinner />
+                                Removing...
+                            </>
+                        ) : (
+                            "Continue"
+                        )}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+};
 
 export const ProjectsPagination = () => {
     const { data, isFetching } = useSuspenseProjects();
@@ -58,6 +155,63 @@ export const ProjectsPagination = () => {
                 page
             })}
         />
+    );
+};
+
+interface ProjectActionProps {
+    children: ReactNode;
+    onProjectDetails : () => void;
+    initialState : Project;
+    
+}
+
+export const ProjectActions = ({
+    children,
+    onProjectDetails,
+    initialState,
+}: ProjectActionProps) => {
+    const {setOpen, setInitialState} = useProjectForm();
+    const {setOpen : onOpenRemoveDialog , setInitialState: setRemoveProjectInitialState} = useRemoveProjectDialog();
+
+    return (
+        <div>
+            <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                }} className=" cursor-pointer">{children}</DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                        className="font-medium p-2.5 cursor-pointer"
+                        onClick={onProjectDetails}
+                    >
+                        <ExternalLinkIcon className="size-4 mr-2 stroke-2" />
+                        Project Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onClick={() => {
+                            setOpen(true);
+                            setInitialState(initialState);
+                        }}
+                        className="font-medium p-2.5 cursor-pointer"
+                    >
+                        <PencilIcon className="size-4 mr-2 stroke-2" />
+                        Edit Project
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onClick={() => {
+                            onOpenRemoveDialog(true);
+                            setRemoveProjectInitialState(initialState);
+                        }}
+                        // disabled={isPending}
+                        className="text-amber-700 focus:text-amber-700 font-medium p-2.5 cursor-pointer"
+                    >
+                        <Trash2Icon className="size-4 mr-2 stroke-2" />
+                        Delete Project
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
     );
 };
 
@@ -160,6 +314,7 @@ export const EmptyProjectView = ({
     empty_label = "No items",
     isCreate = true
 }: EmptyProjectViewProps) => {
+    const {setOpen} = useProjectForm();
     return (
         <div className=" w-md m-auto h-96 flex items-center justify-center">
             <Empty className=" border border-dashed border-primary dark:bg-background ">
@@ -173,7 +328,10 @@ export const EmptyProjectView = ({
 
                 {isCreate && (
                     <EmptyContent>
-                        <CreateNewProject title="Create new Project" />
+                        <Button onClick={() => setOpen(true)} >
+                            Create new Project
+                        </Button>
+                        {/* <CreateNewProject title="Create new Project" /> */}
                     </EmptyContent>
                 )}
             </Empty>
@@ -190,19 +348,15 @@ export const ProjectLists = () => {
         return <EmptyProjectView message="" empty_label="No projects yet" isCreate={false} />
     }
 
+
+
     return (
         <section className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5 h-full">
-            {data.projects.map(({ id, name, description, status, priority, _count, endDate }) => (
+            {data.projects.map((project) => (
                 <ProjectCard
-                    id = {id}
-                    key={id}
-                    name={name}
-                    description={description}
-                    status={status}
-                    priority={priority}
-                    members={_count.members}
-                    endDate={endDate}
-                    classname="border border-primary"
+                    key = {project.id}
+                    data = {project}
+                    className="border border-primary"
                 />
             ))}
         </section>
@@ -222,35 +376,49 @@ export const ProjectsWrapper = ({
     filterSection,
     children
 }: ProjectsWrapperProps) => {
+    const {setOpen} = useProjectForm();
     return (
-        <main className='p-6 flex flex-col gap-10 h-full '>
-            {/* start to header  and create project button */}
-            <section className=' flex items-start justify-between'>
-                <div className='flex flex-col gap-2'>
-                    <h1 className=' text-3xl font-semibold'>
-                        Projects
-                    </h1>
-                    <p className=' text-sm text-muted-foreground'>
-                        Manage and track your projects
-                    </p>
-                </div>
+        <>
+            <main className='p-6 flex flex-col gap-10 h-full '>
+                {/* start to header  and create project button */}
+                <section className=' flex items-start justify-between'>
+                    <div className='flex flex-col gap-2'>
+                        <h1 className=' text-3xl font-semibold'>
+                            Projects
+                        </h1>
+                        <p className=' text-sm text-muted-foreground'>
+                            Manage and track your projects
+                        </p>
+                    </div>
 
-                <CreateNewProject />
-            </section>
-            {/* end to header  and create project button */}
+                    <Button onClick={() => setOpen(true)}>
+                        <PlusIcon/>
+                        New Project
+                    </Button>
+                </section>
+                {/* end to header  and create project button */}
 
-            {/* start to filter section */}
-            {filterSection}
-            {/* end to filter section */}
+                {/* start to filter section */}
+                {filterSection}
+                {/* end to filter section */}
 
-            {/* start to children section */}
-            {children}
-            {/* end to children section */}
+                {/* start to children section */}
+                {children}
+                {/* end to children section */}
 
-            {/* start to pagination */}
-            {pagination}
-            {/* end to pagination */}
+                {/* start to pagination */}
+                {pagination}
+                {/* end to pagination */}
 
-        </main>
+            </main>
+
+            {/* start to create project from  */}
+            <CreateNewProject/>
+            {/* end to create project from  */}
+
+            {/* start to remove dialog  */}
+            <RemoveProjectDialog/>
+            {/* end to remove dialog  */}
+        </>
     )
 }
