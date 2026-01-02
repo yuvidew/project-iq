@@ -8,13 +8,15 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { BadgeText } from "./ui/badge-text";
-import { Progress } from "./ui/progress";
-import {  ProjectPriority, ProjectStatus } from "@/generated/prisma";
+import { ProjectPriority, ProjectStatus } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
-import { Calendar1Icon, UsersIcon } from "lucide-react";
+import { Calendar1Icon, MoreHorizontalIcon, UsersIcon } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { ProjectProgress } from "./ui/project-progress";
+import { ProjectActions, statusStyles } from "@/features/projects/_components/projects";
+import { Project } from "@/features/projects/types";
 
 const priorityStyles: Record<ProjectPriority, { label: string; className: string }> = {
     LOW: {
@@ -39,14 +41,8 @@ const checkPriority = (priority: ProjectPriority) =>
     priorityStyles[priority] ?? { label: "Unknown", className: "bg-slate-50 text-slate-700 border-slate-200" };
 
 interface Props {
-    id : string;
-    name : string;
-    description? : string | null;
-    status  : ProjectStatus;
-    priority : ProjectPriority;
-    members? : number;
-    endDate? : Date | null;
-    classname? : string 
+    data : Project
+    className?: string;
 };
 
 /**
@@ -64,69 +60,83 @@ interface Props {
  * />
  */
 export const ProjectCard = ({
-    id,
-    name,
-    description,
-    status,
-    priority,
-    members,
-    endDate,
-    classname = ""
+    data ,
+    className = ""
 }: Props) => {
-    const {slug} = useParams()
-    const { label } = checkPriority(priority);
+    const { slug } = useParams();
+    const { label } = checkPriority(data.priority);
+    const navigate = useRouter()
+    const memberCount = Array.isArray(data.members) ? data.members.length : 0;
+    const hasMembers = memberCount > 0;
+    const endDateValue = data.endDate ? new Date(data.endDate) : null;
+    const endDateLabel =
+        endDateValue && !Number.isNaN(endDateValue.getTime())
+            ? format(endDateValue, "MMM dd, yyyy")
+            : null;
 
     return (
-        <Link href={`/organizations/${slug}/projects/${id}`} prefetch>
-            <Card className={` rounded-sm h-56 border-none  shadow-none ${classname}`}>
+        <Card className={cn("rounded-sm h-56 border-none shadow-none", className)}>
+            <div className=" relative">
                 <CardHeader>
                     <CardTitle className=" font-semibold">
-                        {name}
+                        {data.name}
                     </CardTitle>
-                    {description && (
+                    {data.description && (
                         <CardDescription className=" text-sm line-clamp-2">
-                            {description}
+                            {data.description}
                         </CardDescription>
                     )}
                 </CardHeader>
-                <CardContent >
-                    <div className=" flex items-start justify-between">
-                        <div className="">
-                            <BadgeText status={status} />
+                <div className=" absolute top-1 right-3">
+                    <ProjectActions 
+                        initialState = {data} onProjectDetails={() =>
+                        navigate.push(`/organizations/${slug}/projects/${data.id}`)
+                    } >
+                        <MoreHorizontalIcon className="size-[18px] stroke-1 shrink-0  transition" />
+                    </ProjectActions>
+                </div>
+            </div>
+            <CardContent >
+                <div className=" flex items-start justify-between">
+                    <div className="">
+                        <BadgeText status={data.status} />
 
-                            {(members && endDate) && (
-                                <div className="flex items-center gap-2 mt-3">
-                                    <div className=" flex items-center gap-1 text-muted-foreground text-xs">
-                                        <UsersIcon className=" size-3"/>
-                                        {members} Members
+                        {(hasMembers || endDateLabel) && (
+                            <div className="flex items-center gap-2 mt-3">
+                                {hasMembers && (
+                                    <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                                        <UsersIcon className="size-3" />
+                                        {memberCount} Members
                                     </div>
-                                    <div className=" flex items-center gap-1 text-muted-foreground text-xs">
-                                        <Calendar1Icon className=" size-3"/>
-                                        {format(endDate, "MMM dd, yyyy")} 
+                                )}
+                                {endDateLabel && (
+                                    <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                                        <Calendar1Icon className="size-3" />
+                                        {endDateLabel}
                                     </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <span className={cn("px-2 py-0.5 text-xs text-muted-foreground rounded-sm")}>
-                            <span className=" text-sm">
-                                {label} 
-                            </span>{" "}
-                            Priority
-                        </span>
+                                )}
+                            </div>
+                        )}
                     </div>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-2">
-                    <div className=" flex items-center w-full justify-between gap-2">
-                        <p>Progress</p>
 
-                        <span className=" text-muted-foreground">
-                            0%
-                        </span>
-                    </div>
-                    <Progress status={status}/>
-                </CardFooter>
-            </Card>
-        </Link>
+                    <span className={cn("px-2 py-0.5 text-xs text-muted-foreground rounded-sm")}>
+                        <span className=" text-sm">
+                            {label}
+                        </span>{" "}
+                        Priority
+                    </span>
+                </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-2">
+                <div className=" flex items-center w-full justify-between gap-2">
+                    <p>Progress</p>
+
+                    <span className=" text-muted-foreground text-xs">
+                        {statusStyles[data.status].value}%
+                    </span>
+                </div>
+                <ProjectProgress status={data.status} />
+            </CardFooter>
+        </Card>
     )
 }

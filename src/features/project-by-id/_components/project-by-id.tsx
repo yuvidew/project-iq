@@ -81,7 +81,6 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
 import { useRemoveTaskDialog } from "../hooks/use-remove-task-dialog";
 import { DataCalendar } from "./data-calender";
@@ -390,6 +389,8 @@ const RemoveTaskDialog = () => {
         </AlertDialog>
     );
 };
+
+
 
 interface TaskActionProps {
     initialState: { id: string; name: string };

@@ -8,7 +8,6 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
@@ -28,96 +27,143 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { PlusIcon } from "lucide-react";
 import z from "zod";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { MultipleSelect } from "@/components/ui/multiple-select";
-import { useCreateProject } from "@/features/projects/hooks/use-projects";
+import { useCreateProject, useUpdateProject } from "@/features/projects/hooks/use-projects";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { ProjectPriority, ProjectStatus } from "@/generated/prisma";
 import { Spinner } from "./ui/spinner";
 import { useOrgMembers } from "@/features/organization-members/hooks/use-organization-members";
-import { useState } from "react";
+import { useProjectForm } from "@/features/projects/hooks/use-project-from";
+import { useEffect, useMemo } from "react";
 
 const NewProjectSchema = z.object({
-    project_name: z.string().min(6, { message: "Project name must be 6 characters long" }),
-    project_description: z.string().optional(),
+    name: z.string().min(6, { message: "Project name must be 6 characters long" }),
+    description: z.string().optional(),
     status: z.nativeEnum(ProjectStatus),
     priority: z.nativeEnum(ProjectPriority),
-    state_date: z.date().optional(),
-    end_date: z.date().optional(),
-    project_lead: z.string(),
-    team_members: z.array(z.string())
+    startDate: z.date().optional(),
+    endDate: z.date().optional(),
+    projectLeadEmail: z.string(),
+    members: z.array(z.string())
 });
 
 type NewProjectValue = z.infer<typeof NewProjectSchema>;
 
-interface Props  {
-    title? : string;
-    organizationSlug?: string;
-}
 
-export const CreateNewProject = ({title = "New Project"} : Props) => {
-    const {mutate: onCreateProject , isPending} = useCreateProject();
-    const {data: membersList, isLoading} = useOrgMembers();
 
-    const [open , setOpen] = useState(false)
-    const {slug} = useParams();
+export const CreateNewProject = () => {
+    const { mutate: onCreateProject, isPending } = useCreateProject();
+    const { data: membersList, isLoading } = useOrgMembers();
+    const { mutate: onUpdateProject, isPending: isUpdating } = useUpdateProject();
+    const { open, setOpen, initialState, reset: resetProjectForm } = useProjectForm();
+    const { slug } = useParams();
+
+    const defaultValues = useMemo<NewProjectValue>(() => ({
+        name: "",
+        description: "",
+        status: ProjectStatus.PLANNING,
+        priority: ProjectPriority.MEDIUM,
+        startDate: undefined,
+        endDate: undefined,
+        members: [],
+        projectLeadEmail: "No lead",
+    }), []);
+
     const form = useForm<NewProjectValue>({
         resolver: zodResolver(NewProjectSchema),
-        defaultValues: {
-            project_name: "",
-            project_description: "",
-            status: ProjectStatus.PLANNING,
-            priority: ProjectPriority.MEDIUM,
-            state_date: undefined,
-            end_date: undefined,
-            team_members: [],
-            project_lead: "No lead"
-        }
+        defaultValues,
     });
 
+    useEffect(() => {
+        if (!initialState?.id) {
+            form.reset(defaultValues);
+            return;
+        }
+
+        form.reset({
+            name: initialState.name ?? "",
+            description: initialState.description ?? "",
+            status: initialState.status ?? ProjectStatus.PLANNING,
+            priority: initialState.priority ?? ProjectPriority.MEDIUM,
+            startDate: initialState.startDate ? new Date(initialState.startDate) : undefined,
+            endDate: initialState.endDate ? new Date(initialState.endDate) : undefined,
+            members: initialState.members?.map((m) => m.email) ?? [],
+            projectLeadEmail: initialState.projectLeadEmail ?? "No lead",
+        });
+    }, [defaultValues, form, initialState]);
+
+    const isUpdateForm = Boolean(initialState?.id);
+    const isSubmitting = isPending || isUpdating;
 
     const onSubmit = (values: NewProjectValue) => {
-        if (!slug) {
+        if (!slug && !isUpdateForm) {
             toast.error("Select an organization before creating a project.");
             return;
         }
 
-        onCreateProject(
-            {
-                name : values.project_name,
-                description : values.project_description,
-                status : values.status ,
-                priority : values.priority ,
-                startDate : values.state_date,
-                endDate : values.end_date,
-                members : values.team_members,
-                projectLeadEmail : values.project_lead,
-                organizationSlug: slug as string,
-            },
-            {
-                onSuccess : () => {
-                    form.reset();
-                    setOpen(false);
+        const projectLeadEmail =
+            values.projectLeadEmail && values.projectLeadEmail !== "No lead"
+                ? values.projectLeadEmail
+                : undefined;
+
+        const basePayload = {
+            name: values.name,
+            description: values.description,
+            status: values.status,
+            priority: values.priority,
+            startDate: values.startDate,
+            endDate: values.endDate,
+            members: values.members,
+            projectLeadEmail,
+        };
+
+        if (isUpdateForm) {
+            onUpdateProject(
+                { ...basePayload, id: initialState.id as string },
+                {
+                    onSuccess: () => {
+                        form.reset(defaultValues);
+                        resetProjectForm();
+                        setOpen(false);
+                    },
                 }
+            );
+            return;
+        }
+
+        onCreateProject(
+            { ...basePayload, organizationSlug: slug as string },
+            {
+                onSuccess: () => {
+                    form.reset(defaultValues);
+                    resetProjectForm();
+                    setOpen(false);
+                },
             }
-        )
-    }
+        );
+    };
 
     return (
-        <Dialog open = {open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant={"default"}>
-                    <PlusIcon />
-                    {title}
-                </Button>
-            </DialogTrigger>
+        <Dialog
+            open={open}
+            onOpenChange={(nextOpen) => {
+                if (!nextOpen) {
+                    form.reset(defaultValues);
+                    resetProjectForm();
+                    return;
+                }
+                setOpen(nextOpen);
+            }}
+        >
             <DialogContent className=" flex flex-col gap-8">
                 <DialogHeader>
-                    <DialogTitle>Create New Project</DialogTitle>
+                    <DialogTitle>
+                        {isUpdateForm ? "Update Project" : "Create New Project"}
+                    </DialogTitle>
                     <DialogDescription className=" hidden p-0">
                     </DialogDescription>
                 </DialogHeader>
@@ -128,7 +174,7 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                     >
                         <FormField
                             control={form.control}
-                            name="project_name"
+                            name="name"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Project name</FormLabel>
@@ -142,7 +188,7 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
 
                         <FormField
                             control={form.control}
-                            name="project_description"
+                            name="description"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Description (Optional)</FormLabel>
@@ -154,7 +200,7 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                             )}
                         />
 
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-4 grid-cols-2">
                             <FormField
                                 control={form.control}
                                 name="status"
@@ -204,10 +250,10 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                             />
                         </div>
 
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-4 grid-cols-2">
                             <FormField
                                 control={form.control}
-                                name="state_date"
+                                name="startDate"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Start date</FormLabel>
@@ -226,7 +272,7 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
 
                             <FormField
                                 control={form.control}
-                                name="end_date"
+                                name="endDate"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>End date</FormLabel>
@@ -246,7 +292,7 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
 
                         <FormField
                             control={form.control}
-                            name="project_lead"
+                            name="projectLeadEmail"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Project lead</FormLabel>
@@ -275,7 +321,7 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
 
                         <FormField
                             control={form.control}
-                            name="team_members"
+                            name="members"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Team members</FormLabel>
@@ -304,13 +350,12 @@ export const CreateNewProject = ({title = "New Project"} : Props) => {
                                 </Button>
                             </DialogClose>
                             <Button type="submit">
-                                {isPending ? (
+                                {isSubmitting ? (
                                     <>
-                                        <Spinner/>
-
-                                        Creating...
+                                        <Spinner />
+                                        {isUpdating ? "Saving..." : "Creating..."}
                                     </>
-                                ) : "Create"}
+                                ) : isUpdateForm ? "Update Project" : "Create Project"}
                             </Button>
                         </div>
                     </form>
