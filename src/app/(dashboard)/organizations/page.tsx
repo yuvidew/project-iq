@@ -1,6 +1,4 @@
 
-import { ErrorView } from '@/components/error-view';
-import { LoadingView } from '@/components/loading-view';
 import { OrganizationErrorView } from '@/features/organization/_components/organization';
 import { organizationParamsLoader } from '@/features/organization/server/params-loader';
 import { prefetchOrganizations } from '@/features/organization/server/prefetch';
