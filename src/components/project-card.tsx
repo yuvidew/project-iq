@@ -12,7 +12,6 @@ import { ProjectPriority, ProjectStatus } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
 import { Calendar1Icon, MoreHorizontalIcon, UsersIcon } from "lucide-react";
 import { format } from "date-fns";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ProjectProgress } from "./ui/project-progress";
 import { ProjectActions, statusStyles } from "@/features/projects/_components/projects";
@@ -63,10 +62,18 @@ export const ProjectCard = ({
     data ,
     className = ""
 }: Props) => {
+    if (!data) {
+        return null;
+    }
+
     const { slug } = useParams();
-    const { label } = checkPriority(data.priority);
-    const navigate = useRouter()
-    const memberCount = Array.isArray(data.members) ? data.members.length : 0;
+    const priority = data.priority ?? ProjectPriority.MEDIUM;
+    const status = data.status ?? ProjectStatus.PLANNING;
+    const { label } = checkPriority(priority);
+    const navigate = useRouter();
+    const memberCount = Array.isArray(data.members)
+        ? data.members.length
+        : Number(data.members ?? 0);
     const hasMembers = memberCount > 0;
     const endDateValue = data.endDate ? new Date(data.endDate) : null;
     const endDateLabel =
@@ -99,7 +106,7 @@ export const ProjectCard = ({
             <CardContent >
                 <div className=" flex items-start justify-between">
                     <div className="">
-                        <BadgeText status={data.status} />
+                        <BadgeText status={status} />
 
                         {(hasMembers || endDateLabel) && (
                             <div className="flex items-center gap-2 mt-3">
@@ -132,10 +139,10 @@ export const ProjectCard = ({
                     <p>Progress</p>
 
                     <span className=" text-muted-foreground text-xs">
-                        {statusStyles[data.status].value}%
+                        {statusStyles[status].value}%
                     </span>
                 </div>
-                <ProjectProgress status={data.status} />
+                <ProjectProgress status={status} />
             </CardFooter>
         </Card>
     )

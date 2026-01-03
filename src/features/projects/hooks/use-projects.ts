@@ -22,6 +22,13 @@ export const useCreateProject = () =>{
                     queryClient.invalidateQueries(
                         trpc.project.getMany.queryOptions({ organizationSlug })
                     );
+
+                    queryClient.invalidateQueries(
+                        trpc.organizationBySlug.getOrganizationBySlug.queryOptions({
+                            slug: organizationSlug,
+                            search: "",
+                        })
+                    )
                 }
                 // router.push(`/project/${data.id}`);
             },
@@ -71,6 +78,13 @@ export const useUpdateProject = () => {
                     queryClient.invalidateQueries(
                         trpc.project.getMany.queryOptions({ organizationSlug })
                     );
+
+                    queryClient.invalidateQueries(
+                        trpc.organizationBySlug.getOrganizationBySlug.queryOptions({
+                            slug: organizationSlug,
+                            search: "",
+                        })
+                    )
                 }
 
                 // TODO: also call getOne
@@ -96,6 +110,12 @@ export const useRemoveProject = () => {
                     queryClient.invalidateQueries(
                         trpc.project.getMany.queryOptions({ organizationSlug })
                     );
+                    queryClient.invalidateQueries(
+                        trpc.organizationBySlug.getOrganizationBySlug.queryOptions({
+                            slug: organizationSlug,
+                            search: "",
+                        })
+                    )
                 }
 
                 // TODO: also call getOne
