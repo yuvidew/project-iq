@@ -118,7 +118,6 @@ export const useRemoveProject = () => {
                     )
                 }
 
-                // TODO: also call getOne
             }
         })
     )

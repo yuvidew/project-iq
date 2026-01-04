@@ -7,8 +7,6 @@ import { ArrowRightIcon, Clock10Icon, HistoryIcon, TriangleAlertIcon, User2Icon,
 import { CreateNewProject } from "../../../components/create-new-project";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useSuspenseProjects } from "@/features/projects/hooks/use-projects";
-import { Spinner } from "@/components/ui/spinner";
 import { ProjectCard } from "@/components/project-card";
 import { useProjectForm } from "@/features/projects/hooks/use-project-from";
 import { Card, CardContent } from '@/components/ui/card';
@@ -81,17 +79,7 @@ const EmptyInProgress = () => {
     )
 }
 
-const LoadingProject = () => {
-    return (
-        <div className=' py-10 w-full flex flex-col items-center justify-center gap-5'>
 
-            <Button size={"icon-sm"} >
-                <Spinner />
-            </Button>
-            <h1 className=' text-muted-foreground'> Loading projects...</h1>
-        </div>
-    )
-}
 
 
 interface RecentTaskItemProps {
@@ -365,7 +353,6 @@ export const OrganizationBySlug = () => {
     const { data } = useSuspenseOrganizationBySlug();
     const { setOpen } = useProjectForm();
 
-    console.log("the organization by slug data", data);
 
     return (
         <>
@@ -386,7 +373,6 @@ export const OrganizationBySlug = () => {
                 {/* end to create new project section  */}
 
                 {/* start to progress card */}
-                {/* TODO: add the actual data get from the api  */}
                 <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ">
                     <Card
                         className=" rounded-sm"
