@@ -91,7 +91,7 @@ export const taskRouter = router({
                 ...(status && { status }),
             };
 
-            const [total, tasks, projectMembers] = await Promise.all([
+            const [total, tasks] = await Promise.all([
                 prisma.task.count({ where }),
                 prisma.task.findMany({
                     where,
@@ -151,6 +151,18 @@ export const taskRouter = router({
                     totalPages: Math.ceil(total / pageSize),
                 }
             };
+        }),
+    
+    getTaskByUserIdAndOrgSlug : protectedProcedure
+        .input(
+            z.object({
+                organizationSlug : z.string(),
+            })
+        ).query(async ({input, ctx}) => {
+            const userId = ctx.auth.user.id;
+            const {organizationSlug} = input;
+
+            
         }),
 
     getOne: protectedProcedure

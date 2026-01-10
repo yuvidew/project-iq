@@ -42,7 +42,7 @@ export const BadgeTaskStatus = ({ status = "TODO", className }: BadgeTaskStatusP
     const { label, className: statusClassName } = statusStyles[status]
 
     return (
-        <span className={cn("px-2 py-0.5 font-medium rounded-sm text-xs", statusClassName, className)}>
+        <span className={cn("inline-flex w-fit items-center rounded-sm px-2 py-0.5 text-xs font-medium", statusClassName, className)}>
             {label}
         </span>
     )

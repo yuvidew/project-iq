@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation"
 import { useTRPC } from "@/trpc/trpc-client-provider";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useProjectsParams } from "./use-projects-params";
 
@@ -114,11 +114,21 @@ export const useRemoveProject = () => {
                         trpc.organizationBySlug.getOrganizationBySlug.queryOptions({
                             slug: organizationSlug,
                             search: "",
-                        })
-                    )
-                }
+                        }),
+                    );
+                };
 
-            }
-        })
+            },
+        }),
+    );
+};
+
+// Hook to get project list
+export const useGetProjectsList = () => {
+    const trpc = useTRPC();
+    const { slug : organizationSlug} = useParams<{ slug: string }>();
+
+    return useQuery(
+        trpc.project.getProjectList.queryOptions({ organizationSlug })
     )
 }

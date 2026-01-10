@@ -39,22 +39,43 @@ import z from "zod";
 import { TeamMembersTable } from "./teams-table";
 import { useInviteMembersForm } from "../hooks/use-invite-members-from";
 
+import { Spinner } from "@/components/ui/spinner";
+import { useParams } from "next/navigation";
+import { useInviteMember } from "../hooks/use-team";
+import { OrganizationRole } from "@/generated/prisma";
+
 const InviteMemberSchema = z.object({
     email: z.string(),
-    role: z.string(),
+    role: z.enum(OrganizationRole),
 });
 
 type InviteMemberValue = z.infer<typeof InviteMemberSchema>;
 
 const InviteMember = () => {
-    const {open, setOpen} = useInviteMembersForm()
+    const {open, setOpen} = useInviteMembersForm();
+
+    const {mutate: onInviteMember, isPending} = useInviteMember()
+    const { slug } = useParams<{ slug?: string }>();
+
     const form = useForm<InviteMemberValue>({
         resolver: zodResolver(InviteMemberSchema),
         defaultValues: {
             email: "",
-            role: "ADMIN"
+            role: OrganizationRole.ADMIN,
         },
     });
+
+    const onSendInvitation  = (value: InviteMemberValue) => {
+        onInviteMember(
+            {...value, slug: slug || ""},
+            {
+                onSuccess: () => {
+                    form.reset();
+                    setOpen(false);
+                }
+            }
+        )
+    }
 
     return (
         <Dialog open = {open} onOpenChange={setOpen}>
@@ -72,6 +93,7 @@ const InviteMember = () => {
                 <Form {...form}>
                     <form
                         className="space-y-4"
+                        onSubmit={form.handleSubmit(onSendInvitation)}
                     >
                         <FormField
                             control={form.control}
@@ -103,8 +125,9 @@ const InviteMember = () => {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="ADMIN">Admin</SelectItem>
-                                            <SelectItem value="MEMBER">Member</SelectItem>
+                                            <SelectItem value={OrganizationRole.OWNER}>Owner</SelectItem>
+                                            <SelectItem value={OrganizationRole.ADMIN}>Admin</SelectItem>
+                                            <SelectItem value={OrganizationRole.MEMBER}>Member</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -112,20 +135,20 @@ const InviteMember = () => {
                             )}
                         />
 
+
                         <div className="flex justify-end gap-2">
-                            <DialogClose asChild>
-                                <Button type="button" variant="secondary">
+                            <DialogClose asChild disabled={isPending}>
+                                <Button disabled = {isPending} type="button" variant="secondary">
                                     Cancel
                                 </Button>
                             </DialogClose>
-                            <Button type="submit">
-                                {/* {isSubmitting ? (
+                            <Button type="submit" disabled={isPending}>
+                                {isPending ? (
                                     <>
                                         <Spinner />
-                                        {isUpdating ? "Saving..." : "Creating..."}
+                                        Sending...
                                     </>
-                                ) : isUpdateForm ? "Update Project" : "Create Project"} */}
-                                Send Invitation
+                                ) :  "Send Invitation"}
                             </Button>
                         </div>
                     </form>

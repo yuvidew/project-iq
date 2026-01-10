@@ -112,6 +112,16 @@ export const columns: ColumnDef<TeamMember>[] = [
     },
 
     {
+        accessorKey: "project",
+        header: "PROJECT",
+        cell: ({ row }) => (
+            <span className="text-muted-foreground">
+                {row.getValue("project")}
+            </span>
+        ),
+    },
+
+    {
         accessorKey: "role",
         header: "ROLE",
         cell: ({ row }) => <RoleBadge role={row.getValue("role")} />,
