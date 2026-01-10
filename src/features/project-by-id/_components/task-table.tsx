@@ -75,7 +75,9 @@ export const columns: ColumnDef<Task>[] = [
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => (
+            <div>
             <BadgeTaskStatus status={(row.getValue("status") as TaskStatus) ?? "TODO"} />
+            </div>
         ),
     },
     {

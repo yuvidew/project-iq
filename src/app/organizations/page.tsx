@@ -1,5 +1,5 @@
 
-import { OrganizationErrorView } from '@/features/organization/_components/organization';
+import { OrganizationErrorView, OrganizationLoadingView } from '@/features/organization/_components/organization';
 import { organizationParamsLoader } from '@/features/organization/server/params-loader';
 import { prefetchOrganizations } from '@/features/organization/server/prefetch';
 import { OrganizationView } from '@/features/organization/view/organization-view';
@@ -8,7 +8,6 @@ import { HydrateClient } from '@/trpc/server';
 import { SearchParams } from 'nuqs';
 import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { OrganizationLoadingView } from '../../../features/organization/_components/organization';
 
 
 type Props = {

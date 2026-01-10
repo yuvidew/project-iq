@@ -120,7 +120,7 @@ const RecentTaskItem = ({ data }: RecentTaskItemProps) => {
                 <div className=" bg-gray-50/10 p-1.5 rounded-sm mt-2">
                     <SquareIcon className={` size-4 ${statusStyles[data.status].className}`} />
                 </div>
-                <div className="w-full flex flex-col gap-2   ">
+                <div className=" flex flex-col items-start justify-start w-[80%] gap-2   ">
                     <h4 className=" text-lg line-clamp-1 p-0">
                         {data.name}
                     </h4>

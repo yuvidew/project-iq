@@ -57,10 +57,10 @@ const menu_Items = (slug :ParamValue) => [
 
 export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
     const { slug } = useParams();
-    const [open, setOpen] = useState(false)
-    const [isSignOutLoading, setIsSignOutLoading] = useState(false)
-    const { setTheme, theme, resolvedTheme } = useTheme()
-    const [mounted, setMounted] = useState(false)
+    const [open, setOpen] = useState(false);
+    const [isSignOutLoading, setIsSignOutLoading] = useState(false);
+    const { setTheme, theme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
 
     const router = useRouter()
     const pathname = usePathname()

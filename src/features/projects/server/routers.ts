@@ -137,6 +137,85 @@ export const projectRouter = router({
             }
         };
     }),
+    getOrgDetails: protectedProcedure.input(
+        z.object({
+            organizationSlug: z.string(),
+        })
+    ).query(async ({ input, ctx }) => {
+        const { organizationSlug } = input;
+
+        const organization = await prisma.organization.findUnique({
+            where: { slug: organizationSlug },
+            include: {
+                members: {
+                    select: {
+                        user: {
+                            select: { email: true, name: true },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!organization) {
+            throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "Organization not found",
+            });
+        }
+
+        const [totalMembers, activeProjects, myTasks] = await Promise.all([
+            prisma.organizationMember.count({
+                where: { organizationSlug },
+            }),
+            prisma.project.count({
+                where: {
+                    organizationSlug,
+                    status: { not: ProjectStatus.COMPLETED },
+                },
+            }),
+            prisma.task.count({
+                where: {
+                    assigneeId: ctx.auth.user.id,
+                    project: { organizationSlug },
+                },
+            }),
+        ]);
+
+        return {
+            organization,
+            stats: {
+                totalMembers,
+                activeProjects,
+                myTasks,
+            },
+        };
+    }),
+
+    getProjectList : protectedProcedure.input(
+        z.object({
+            organizationSlug : z.string(),
+        })
+    ).query(async ({input}) => {
+        const {organizationSlug } = input;
+
+        const projectList = await prisma.project.findMany({
+            where : {
+                organizationSlug
+            }
+        });
+
+        if (!projectList) {
+            throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "Projects not found",
+            });
+        }
+
+        return projectList
+
+
+    }),
     getOne: protectedProcedure
         .input(z.string())
         .query(async ({ input: projectId, ctx }) => {
