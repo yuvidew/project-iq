@@ -140,24 +140,29 @@ export const teamsRouter = router({
             };
 
 
-            const memberships = await prisma.organizationMember.findMany({
-                where,
-                orderBy: { createdAt: "desc" },
-                skip,
-                take: pageSize,
-                include: {
-                    organization: true,
-                    members: {
-                        select: {
-                            user: {
-                                select: { email: true , name: true},
-                            },
-                        },
+            const [total, memberships] = await Promise.all([
+                prisma.organizationMember.count({ where }),
+                prisma.organizationMember.findMany({
+                    where,
+                    orderBy: { createdAt: "desc" },
+                    skip,
+                    take: pageSize,
+                    include: { 
+                        user: true,
+                        
                     },
-                    _count: { select: { members: true } },
-                },
-            });
-            return memberships;
+                }),
+            ]);
+
+            return {
+                memberships,
+                meta: {
+                    page,
+                    pageSize,
+                    total,
+                    totalPages: Math.ceil(total / pageSize),
+                }
+            };
         }
         ),
 

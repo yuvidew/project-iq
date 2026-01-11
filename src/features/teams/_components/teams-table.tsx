@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table"
 import { ReactNode, useState } from "react"
 import { format } from 'date-fns';
-import { TaskStatus } from "@/generated/prisma"
+import { OrganizationRole, TaskStatus } from "@/generated/prisma"
 import { MoreHorizontalIcon } from "lucide-react";
 import { BadgeTaskStatus } from "@/components/ui/badge-task-status";
 import { Button } from "@/components/ui/button";
@@ -39,15 +39,16 @@ export type TeamMember = {
     id: string;
     name: string;
     email: string;
-    role: "ADMIN" | "MEMBER";
+    role: OrganizationRole;
 };
 
-const roleStyles: Record<"ADMIN" | "MEMBER", string> = {
+const roleStyles: Record<OrganizationRole, string> = {
     ADMIN: "bg-purple-100 text-purple-700",
     MEMBER: "bg-blue-100 text-blue-700",
+    OWNER: "bg-green-100 text-green-700",
 };
 
-export const RoleBadge = ({ role }: { role: "ADMIN" | "MEMBER" }) => (
+export const RoleBadge = ({ role }: { role: OrganizationRole }) => (
     <span
         className={`px-2 py-0.5 rounded-md text-xs font-medium ${roleStyles[role]}`}
     >
@@ -111,15 +112,6 @@ export const columns: ColumnDef<TeamMember>[] = [
         ),
     },
 
-    {
-        accessorKey: "project",
-        header: "PROJECT",
-        cell: ({ row }) => (
-            <span className="text-muted-foreground">
-                {row.getValue("project")}
-            </span>
-        ),
-    },
 
     {
         accessorKey: "role",
@@ -127,15 +119,6 @@ export const columns: ColumnDef<TeamMember>[] = [
         cell: ({ row }) => <RoleBadge role={row.getValue("role")} />,
     },
 
-    {
-        id: "actions",
-        header: "",
-        cell: () => (
-            <Button variant="ghost" size="icon">
-                <MoreHorizontalIcon className="h-4 w-4" />
-            </Button>
-        ),
-    },
 ];
 
 
@@ -176,7 +159,7 @@ export const TeamMembersTable = ({
 
     return (
         <section className="w-full flex flex-col gap-6 pt-5">
-            {/* Search + Actions */}
+            {/* Search */}
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 {searchFilter}
             </div>
@@ -232,6 +215,8 @@ export const TeamMembersTable = ({
             </div>
 
             {pagination}
+
+            
         </section>
     );
 };
