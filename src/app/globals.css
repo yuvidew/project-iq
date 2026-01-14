@@ -142,3 +142,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+#liveblocks-badge {
+  display: none !important;
+}

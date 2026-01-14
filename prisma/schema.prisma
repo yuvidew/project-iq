@@ -17,11 +17,11 @@ datasource db {
 // ==============================
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  image     String?
-  emailVerified Boolean @default(false)
+  id                       String        @id @default(cuid())
+  email                    String        @unique
+  name                     String?
+  image                    String?
+  emailVerified            Boolean       @default(false)
   lastActiveOrganizationId Int?
   lastActiveOrganization   Organization? @relation("LastActiveOrganization", fields: [lastActiveOrganizationId], references: [id])
 
@@ -31,15 +31,15 @@ model User {
   sessions            Session[]
   accounts            Account[]
   memberships         OrganizationMember[]
-  ownedOrganizations  Organization[] @relation("OrganizationOwner")
+  ownedOrganizations  Organization[]       @relation("OrganizationOwner")
   projectMemberships  ProjectMember[]
-  projectLeadProjects Project[] @relation("ProjectLead")
-  assignedTasks   Task[]       @relation("TaskAssignee")
-  taskMemberships TaskMember[] @relation("TaskMemberUser")
-  
-  invites     Invitation[] @relation("InvitedUser")
-  sentInvites Invitation[] @relation("SentInvites")
+  projectLeadProjects Project[]            @relation("ProjectLead")
+  assignedTasks       Task[]               @relation("TaskAssignee")
+  taskMemberships     TaskMember[]         @relation("TaskMemberUser")
 
+  invites       Invitation[]   @relation("InvitedUser")
+  sentInvites   Invitation[]   @relation("SentInvites")
+  notifications Notification[]
 
   @@map("user")
 }
@@ -61,11 +61,11 @@ model Session {
 }
 
 model Account {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   accountId  String
   providerId String
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   accessToken           String?
   refreshToken          String?
@@ -88,8 +88,8 @@ model Verification {
   value      String
   expiresAt  DateTime
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([identifier])
   @@map("verification")
@@ -97,103 +97,100 @@ model Verification {
 
 // Also update OrganizationMember.userId (and any other FK to User) to String.
 
-
 // ==============================
 // Organization Models
 // ==============================
 
 model Organization {
-  id          Int      @id @default(autoincrement())
-  name        String
-  slug        String   @unique
+  id   Int    @id @default(autoincrement())
+  name String
+  slug String @unique
 
   // ✅ description added (optional)
   description String?
 
-  logoUrl     String?
-  ownerId     String
-  owner       User     @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  logoUrl String?
+  ownerId String
+  owner   User    @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // ✅ inverse relation for last active org
   lastActiveUsers User[] @relation("LastActiveOrganization")
 
-  members     OrganizationMember[]
-  projects    Project[]
-  invites   Invitation[]
+  members  OrganizationMember[]
+  projects Project[]
+  invites  Invitation[]
 
   @@map("organization")
 }
 
 model OrganizationMember {
-  id             Int  @id @default(autoincrement())
-  userId         String
+  id               Int    @id @default(autoincrement())
+  userId           String
   organizationSlug String
 
-  role           OrganizationRole @default(MEMBER)
+  role OrganizationRole @default(MEMBER)
 
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationSlug], references: [slug], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationSlug], references: [slug], onDelete: Cascade)
 
-  createdAt      DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, organizationSlug])
   @@index([organizationSlug])
   @@map("organization_member")
 }
 
-
 // ==============================
 // Project Models
 // ==============================
 
 model Project {
-  id             String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Basic info
-  name           String
-  description    String?
+  name        String
+  description String?
 
   // Status & priority
-  status         ProjectStatus   @default(PLANNING)
-  priority       ProjectPriority @default(MEDIUM)
+  status   ProjectStatus   @default(PLANNING)
+  priority ProjectPriority @default(MEDIUM)
 
   // Dates
-  startDate      DateTime?
-  endDate        DateTime?
+  startDate DateTime?
+  endDate   DateTime?
 
   // Relations
   organizationSlug String
   organization     Organization @relation(fields: [organizationSlug], references: [slug], onDelete: Cascade)
 
   projectLeadEmail String?
-  projectLead      User? @relation("ProjectLead", fields: [projectLeadEmail], references: [email])
+  projectLead      User?   @relation("ProjectLead", fields: [projectLeadEmail], references: [email])
 
-  members        ProjectMember[]
-  tasks Task[]
+  members ProjectMember[]
+  tasks   Task[]
 
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([organizationSlug])
   @@map("project")
 }
 
 model ProjectMember {
-  id        Int    @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   projectId String
   userId    String
 
-  role      ProjectMemberRole @default(MEMBER)
+  role ProjectMemberRole @default(MEMBER)
 
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  joinedAt  DateTime @default(now())
+  joinedAt DateTime @default(now())
 
   @@unique([projectId, userId])
   @@index([userId])
@@ -208,22 +205,22 @@ model Task {
   name        String
   description String?
   status      TaskStatus @default(TODO)
-  position    Int        @default(0)      // order within a status column
+  position    Int        @default(0) // order within a status column
   dueDate     DateTime?
 
   projectId String
-  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   assigneeId String
-  assignee   User?    @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  assignee   User?  @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
 
-  members    TaskMember[]
+  members TaskMember[]
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([projectId, status])
   @@unique([projectId, status, position], name: "task_column_order")
+  @@index([projectId, status])
 }
 
 model TaskMember {
@@ -231,42 +228,37 @@ model TaskMember {
   taskId String
   userId String
 
-
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation("TaskMemberUser", fields: [userId], references: [id], onDelete: Cascade)
-
 
   @@unique([taskId, userId])
   @@index([userId])
 }
 
-
 // ==============================
 // Invitation Models
 // ==============================
 
-
-
 model Invitation {
-  id               String   @id @default(cuid())
-  email            String
-  role             OrganizationRole
-  token            String   @unique
+  id    String           @id @default(cuid())
+  email String
+  role  OrganizationRole
+  token String           @unique
 
-  status           InvitationStatus @default(PENDING)
+  status InvitationStatus @default(PENDING)
 
-  expiresAt        DateTime
-  acceptedAt       DateTime?
+  expiresAt  DateTime
+  acceptedAt DateTime?
 
   organizationSlug String
   teamId           String?
   invitedById      String
   invitedUserId    String?
 
-  organization   Organization @relation(fields: [organizationSlug], references: [slug])
+  organization Organization @relation(fields: [organizationSlug], references: [slug])
 
-  invitedBy      User         @relation("SentInvites", fields: [invitedById], references: [id])
-  invitedUser    User?        @relation("InvitedUser", fields: [invitedUserId], references: [id])
+  invitedBy   User  @relation("SentInvites", fields: [invitedById], references: [id])
+  invitedUser User? @relation("InvitedUser", fields: [invitedUserId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -274,28 +266,21 @@ model Invitation {
   @@unique([email, organizationSlug])
 }
 
-
 // ==============================
 // Notification Models
 // ==============================
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      NotificationType
-  data      Json
-  read      Boolean  @default(false)
+  id     String           @id @default(cuid())
+  userId String
+  type   NotificationType
+  data   Json
+  read   Boolean          @default(false)
 
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
 }
-
-
-
-
-
-
 
 // ==============================
 // Enums
@@ -304,7 +289,6 @@ model Notification {
 enum NotificationType {
   INVITATION
 }
-
 
 enum OrganizationRole {
   OWNER
@@ -351,4 +335,3 @@ enum InvitationStatus {
   DECLINED
   EXPIRED
 }
-
