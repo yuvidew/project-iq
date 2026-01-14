@@ -1,7 +1,7 @@
 import { Liveblocks } from "@liveblocks/node";
 
 export const liveblocks = new Liveblocks({
-    secret: process.env.NEXT_LIVEBLOCKS_PUBLIC_KEY!,
+    secret: process.env.NEXT_LIVEBLOCKS_SECRET_KEY!,
 });
 
 // helper broadcast to a "user room"

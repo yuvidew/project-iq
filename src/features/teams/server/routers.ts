@@ -1,6 +1,5 @@
 // import { TeamRole } from "@/generated/prisma";
 import prisma from "@/lib/db";
-import { liveblocks, teamRoomId, userRoomId } from "@/server/liveblocks";
 import { protectedProcedure, router } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
@@ -8,6 +7,13 @@ import nodemailer from "nodemailer";
 import { OrganizationRole, Prisma, ProjectStatus } from "@/generated/prisma";
 import { randomUUID } from "crypto";
 import { PAGINATION } from "@/lib/config";
+import { notifyInviteSent } from "@/liveblocks/notifications/invite.notifications";
+
+
+
+
+
+
 
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -106,7 +112,14 @@ export const teamsRouter = router({
             });
 
 
-            // TODO: create a liveblocks notification for the invited user
+            await notifyInviteSent({
+                email: normalizedEmail,
+                organizationName: organization.name,
+                role,
+                invitedByName: ctx.auth.user.name ?? "Someone",
+                token: invited.token,
+            });
+
 
             return invited;
         }),
@@ -147,9 +160,9 @@ export const teamsRouter = router({
                     orderBy: { createdAt: "desc" },
                     skip,
                     take: pageSize,
-                    include: { 
+                    include: {
                         user: true,
-                        
+
                     },
                 }),
             ]);
