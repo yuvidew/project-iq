@@ -53,4 +53,6 @@ export const updateProjectStatus = async (projectId: string) => {
         data: { status: nextStatus },
     });
 
-}
+};
+
+export const normalizeEmail = (email: string) => email.trim().toLowerCase();

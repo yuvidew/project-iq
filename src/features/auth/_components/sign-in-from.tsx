@@ -23,7 +23,7 @@ import z from "zod";
 import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const SignInSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -39,6 +39,13 @@ export const SignInForm = ({
     ...props
 }: React.ComponentProps<"div">) => {
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const token = searchParams.get("token");
+    const organization = searchParams.get("organization");
+
+    console.log("token and organization", token, organization);
+
 
     const [isEyeOpen, setIsEyeOpen] = useState(false);
     const form = useForm<z.infer<typeof SignInSchema>>({
@@ -57,12 +64,12 @@ export const SignInForm = ({
                 {
                     email: value.email,
                     password: value.password,
-                    callbackURL: "/"
+                    callbackURL:"/"
                 },
                 {
                     onSuccess: () => {
                         toast.success("Sign in successfully")
-                        router.push("/")
+                        router.push(token ? `/invite/${token}?organization=${encodeURIComponent(organization as string)}` : "/")
                     },
                     onError: (ctx) => {
                         handledError = true;
@@ -202,7 +209,7 @@ export const SignInForm = ({
                         </div>
                         <div className="text-center text-sm">
                             Don&apos;t have an account?{" "}
-                            <Link href="/sign-up" className="underline underline-offset-4">
+                            <Link href={token ? `/sign-up?token=${token}&organization=${encodeURIComponent(organization as string)}` : "/sign-up"} className="underline underline-offset-4">
                                 Sign up
                             </Link>
                         </div>

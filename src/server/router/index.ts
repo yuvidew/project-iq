@@ -9,6 +9,7 @@ import { organizationMembersRouter } from '../../features/organization-members/s
 import { taskRouter } from "@/features/project-by-id/server/routers";
 import { organizationBySlugRouter } from "@/features/organization-by-slug/server/routers";
 import { teamsRouter } from "@/features/teams/server/routers";
+import { inviteRouter } from "@/features/invite/server/routers";
 
 export const appRouter = router({
     image: imageRouter,
@@ -18,7 +19,8 @@ export const appRouter = router({
     organizationMembers : organizationMembersRouter,
     organizationBySlug : organizationBySlugRouter,
     task : taskRouter,
-    teams : teamsRouter
+    teams : teamsRouter,
+    invite : inviteRouter
 });
 
 export type AppRouter = typeof appRouter;
