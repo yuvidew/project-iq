@@ -1,15 +1,23 @@
+import { InviteErrorView, InviteLoadingView, InviteView } from "@/features/invite/_components/invite";
 import { requireAuth } from "@/lib/auth-utils";
+import { HydrateClient } from "@/trpc/server";
+import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
-interface Props {
-    params: Promise<{
-        token: string
-    }>,
-}
 
-const InvitePage = async ({ params }: Props) => {
+const InvitePage = async () => {
     await requireAuth();
+
+
+
     return (
-        <div>InvitePage</div>
+        <HydrateClient>
+            <ErrorBoundary fallback={<InviteErrorView />}>
+                <Suspense fallback={<InviteLoadingView />}>
+                    <InviteView />
+                </Suspense>
+            </ErrorBoundary>
+        </HydrateClient>
     )
 };
 

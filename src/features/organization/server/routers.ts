@@ -4,7 +4,6 @@ import { protectedProcedure, router } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import type { Prisma } from "@/generated/prisma";
-import { ProjectStatus, TaskStatus } from "@/generated/prisma";
 
 export const organizationRouter = router({
     createOrganization: protectedProcedure.input(
