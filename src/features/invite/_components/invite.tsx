@@ -4,7 +4,9 @@ import { ErrorView } from "@/components/error-view";
 import { LoadingView } from "@/components/loading-view";
 import { Button } from "@/components/ui/button";
 import { FolderOpenIcon } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { useAcceptInvitation, useDeclineInvitation } from "../hooks/use-invite";
+import { Spinner } from "@/components/ui/spinner";
 
 
 export const InviteErrorView = () => {
@@ -17,9 +19,16 @@ export const InviteLoadingView = () => {
 
 
 
+
 export const InviteView = () => {
     const searchParams = useSearchParams();
     const organization = searchParams.get("organization");
+    const notificationDetails = searchParams.get("details");
+    const {token} = useParams<{token : string}>()
+
+    const {mutate: onAccept, isPending: isAcceptPending} = useAcceptInvitation();
+
+    const {mutate: onDecline, isPending: isDeclinePending} = useDeclineInvitation();
     
     return (
         <main className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
@@ -48,13 +57,42 @@ export const InviteView = () => {
                         Accept this invitation to collaborate with your team and access shared resources.
                     </p>
 
+                    {notificationDetails && (
+                        <p className="text-sm text-muted-foreground">
+                            {notificationDetails}
+                        </p>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="flex w-full flex-col gap-3">
-                        <Button className="w-full" size="lg">
-                            Accept invitation
+                        <Button 
+                            disabled = {isAcceptPending}
+                            className="w-full" 
+                            size="lg"
+                            onClick={() => onAccept({token})}
+                        >
+                            {isAcceptPending? (
+                                <>
+                                    <Spinner/>
+
+                                    Accepting...
+                                </>
+                            ) : "Accept invitation"}
                         </Button>
-                        <Button variant="outline" className="w-full" size="lg">
-                            Decline
+                        <Button 
+                            disabled = {isDeclinePending}
+                            variant="outline" 
+                            className="w-full" 
+                            size="lg"
+                            onClick={() => onDecline({token})}
+                        >
+                            {isDeclinePending? (
+                                <>
+                                    <Spinner/>
+
+                                    Declining...
+                                </>
+                            ) : "Decline"}
                         </Button>
                     </div>
                 </div>

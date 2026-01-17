@@ -8,6 +8,7 @@ import { OrganizationRole, Prisma, ProjectStatus } from "@/generated/prisma";
 import { randomUUID } from "crypto";
 import { PAGINATION } from "@/lib/config";
 import { notifyInviteSent } from "@/liveblocks/notifications/invite.notifications";
+import { normalizeEmail } from "@/server/helpers/updateProjectStatus";
 
 
 
@@ -16,7 +17,7 @@ import { notifyInviteSent } from "@/liveblocks/notifications/invite.notification
 
 
 
-export const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
 
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -107,7 +108,7 @@ export const teamsRouter = router({
                 html: `
                     <p>You've been invited to join the organization <strong>${organization.name}</strong>.</p>
                     <p>Click the link below to accept the invitation:</p>
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/invite/${invited.token}">Accept Invitation</a>
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/invite/${invited.token}?organization=${encodeURIComponent(organization.name)}">Accept Invitation</a>
                 `,
             });
 

@@ -21,7 +21,7 @@ import z from "zod";
 import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const SignUpSchema = z.object({
     name: z.string().min(1, { message: "Name is required" }),
@@ -38,50 +38,57 @@ export const SignUpForm = ({
     ...props
 }: React.ComponentProps<"div">) => {
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const token = searchParams.get("token");
+    const organization = searchParams.get("organization");
+
+    console.log("token and organization", token, organization);
+    
     const [isEyeOpen, setIsEyeOpen] = useState(false);
     const form = useForm<z.infer<typeof SignUpSchema>>({
         resolver: zodResolver(SignUpSchema),
         defaultValues: {
-            name : "",
+            name: "",
             email: "",
             password: "",
         },
     });
 
     const onSubmit = async (value: SignUpFormValue) => {
-            let handledError = false;
-    
-            try {
-                await authClient.signUp.email(
-                    {
-                        name : value.name,
-                        email: value.email,
-                        password: value.password,
-                        callbackURL: "/"
+        let handledError = false;
+
+        try {
+            await authClient.signUp.email(
+                {
+                    name: value.name,
+                    email: value.email,
+                    password: value.password,
+                    callbackURL: "/"
+                },
+                {
+                    onSuccess: () => {
+                        toast.success("Sign up successfully")
+                        router.push(token ? `/invite/${token}?organization=${encodeURIComponent(organization as string)}` : "/")
                     },
-                    {
-                        onSuccess: () => {
-                            toast.success("Sign up successfully")
-                            router.push("/")
-                        },
-                        onError: (ctx) => {
-                            handledError = true;
-                            toast.error(ctx.error.message)
-                        }
+                    onError: (ctx) => {
+                        handledError = true;
+                        toast.error(ctx.error.message)
                     }
-                )
-            } catch (error) {
-    
-                if (!handledError) {
-                    const message = error instanceof Error
-                        ? error.message
-                        : "Something went wrong. Please try again."
-                    toast.error(message)
                 }
+            )
+        } catch (error) {
+
+            if (!handledError) {
+                const message = error instanceof Error
+                    ? error.message
+                    : "Something went wrong. Please try again."
+                toast.error(message)
             }
-        };
-    
-        const isPending = form.formState.isSubmitting;
+        }
+    };
+
+    const isPending = form.formState.isSubmitting;
 
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -171,11 +178,11 @@ export const SignUpForm = ({
                             />
                         </div>
                         <Button
-                            disabled={isPending} 
+                            disabled={isPending}
                             type="submit"
                             className="w-full"
                         >
-                            {isPending ? <Spinner/> : "Sign Up"}
+                            {isPending ? <Spinner /> : "Sign Up"}
                         </Button>
                         <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t hidden">
                             <span className="bg-card text-muted-foreground relative z-10 px-2">
@@ -216,7 +223,7 @@ export const SignUpForm = ({
                         <div className="text-center text-sm">
                             Already you have a account {" "}
                             <Link
-                                href="/sign-in"
+                                href={token ? `/sign-in?token=${token}&organization=${encodeURIComponent(organization as string)}` : "/sign-in"}
                                 className="underline underline-offset-4"
                             >
                                 Sign in

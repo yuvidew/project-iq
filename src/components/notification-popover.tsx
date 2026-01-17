@@ -26,18 +26,30 @@ export const NotificationPopover = () => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const unreadCount = notifications.filter((n) => !n.read).length;
 
-    const handleNotificationClick = (token?: string, orgName?: string) => {
+    const handleNotificationClick = (token?: string, orgName?: string, details?: string) => {
         if (!token) {
             toast.error("Token is required")
             return;
         }
 
-        router.push(`/invite/${token}?organization=${orgName}`);
+        const params = new URLSearchParams();
+        if (orgName) {
+            params.set("organization", orgName);
+        }
+        if (details) {
+            params.set("details", details);
+        }
+
+        const queryString = params.toString();
+
+        router.push(`/invite/${token}${queryString ? `?${queryString}` : ""}`);
     };
 
     const handleNotificationKeyDown = (
         event: KeyboardEvent<HTMLDivElement>,
-        token?: string
+        token?: string,
+        orgName?: string,
+        details?: string
     ) => {
         if (!token) {
             return;
@@ -45,7 +57,7 @@ export const NotificationPopover = () => {
 
         if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            handleNotificationClick(token);
+            handleNotificationClick(token, orgName, details);
         }
     };
 
@@ -105,6 +117,26 @@ export const NotificationPopover = () => {
 
         return () => {
             active = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        const handler = (event: Event) => {
+            const customEvent = event as CustomEvent<{ token?: string }>;
+            const declinedToken = customEvent.detail?.token;
+            if (!declinedToken) {
+                return;
+            }
+
+            setNotifications((prev) =>
+                prev.filter((notification) => notification.inviteToken !== declinedToken),
+            );
+        };
+
+        window.addEventListener("invitationDeclined", handler);
+
+        return () => {
+            window.removeEventListener("invitationDeclined", handler);
         };
     }, []);
 
@@ -201,13 +233,23 @@ export const NotificationPopover = () => {
                                     tabIndex={isClickable ? 0 : undefined}
                                     onClick={
                                         isClickable
-                                            ? () => handleNotificationClick(n.inviteToken, n.orgName)
+                                            ? () =>
+                                                handleNotificationClick(
+                                                    n.inviteToken,
+                                                    n.orgName,
+                                                    n.details,
+                                                )
                                             : undefined
                                     }
                                     onKeyDown={
                                         isClickable
                                             ? (event) =>
-                                                handleNotificationKeyDown(event, n.inviteToken)
+                                                handleNotificationKeyDown(
+                                                    event,
+                                                    n.inviteToken,
+                                                    n.orgName,
+                                                    n.details,
+                                                )
                                             : undefined
                                     }
                                     className={`px-4 py-3 text-sm border-b rounded-none gap-1 last:border-b-0 ${!n.read ? "bg-muted/50" : ""
