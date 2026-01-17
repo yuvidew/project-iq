@@ -5,6 +5,9 @@ export type Notification = {
     createdAt: Date;
     read: boolean;
     details?: string;
+    inviteToken?: string;
+    orgName?: string;
+    orgSlug?: string;
 };
 
 export type LiveblocksEvent =
@@ -12,9 +15,11 @@ export type LiveblocksEvent =
         type: "INVITE_SENT";
         payload: {
             organizationName: string;
+            organizationSlug: string;
             invitedByName: string;
             invitedEmail: string;
             role: string;
+            token: string;
         };
     }
     | {

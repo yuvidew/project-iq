@@ -115,6 +115,7 @@ export const teamsRouter = router({
             await notifyInviteSent({
                 email: normalizedEmail,
                 organizationName: organization.name,
+                organizationSlug: slug,
                 role,
                 invitedByName: ctx.auth.user.name ?? "Someone",
                 token: invited.token,

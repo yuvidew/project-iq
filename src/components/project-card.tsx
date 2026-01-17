@@ -30,8 +30,8 @@ const priorityStyles: Record<ProjectPriority, { label: string; className: string
         label: "High",
         className: "bg-orange-50 text-orange-700 border-orange-200",
     },
-    CRITICAL: {
-        label: "Critical",
+    URGENT: {
+        label: "URGENT",
         className: "bg-rose-50 text-rose-700 border-rose-200",
     },
 };

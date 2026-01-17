@@ -18,12 +18,28 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json(
-    notifications.map((notification) => ({
-      id: notification.id,
-      type: notification.type,
-      data: notification.data,
-      read: notification.read,
-      createdAt: notification.createdAt.toISOString(),
-    }))
+    notifications.map((notification) => {
+      const notificationData = notification.data as {
+        message?: string;
+        details?: string;
+        organizationName?: string;
+        organizationSlug?: string;
+        slug?: string;
+        token?: string;
+      };
+
+      const dataWithSlug = {
+        ...notificationData,
+        organizationSlug: notificationData.organizationSlug ?? notificationData.slug,
+      };
+
+        return {
+          id: notification.id,
+          type: notification.type,
+          data: dataWithSlug,
+          read: notification.read,
+          createdAt: notification.createdAt.toISOString(),
+        };
+    })
   );
 }

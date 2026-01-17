@@ -1,20 +1,53 @@
-"use client"
+"use client";
+import { useRouter } from "next/navigation";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover"
-import { LiveblocksEvent, Notification } from "@/liveblocks/types"
-import { useEffect, useState } from "react"
-import { Button } from "./ui/button"
-import { BellIcon } from "lucide-react"
-import { Badge } from "./ui/badge"
-import { useEventListener } from "@liveblocks/react"
+} from "@/components/ui/popover";
+import { LiveblocksEvent, Notification } from "@/liveblocks/types";
+import { useEffect, useState, type KeyboardEvent } from "react";
+import { Button } from "./ui/button";
+import { BellIcon } from "lucide-react";
+import { Badge } from "./ui/badge";
+import { useEventListener } from "@liveblocks/react";
+import { toast } from "sonner";
+
+import {
+    Item,
+    ItemContent,
+    ItemFooter,
+    ItemHeader,
+} from "@/components/ui/item"
+import { format } from "date-fns";
 
 export const NotificationPopover = () => {
+    const router = useRouter();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const unreadCount = notifications.filter((n) => !n.read).length;
 
+    const handleNotificationClick = (token?: string, orgName?: string) => {
+        if (!token) {
+            toast.error("Token is required")
+            return;
+        }
+
+        router.push(`/invite/${token}?organization=${orgName}`);
+    };
+
+    const handleNotificationKeyDown = (
+        event: KeyboardEvent<HTMLDivElement>,
+        token?: string
+    ) => {
+        if (!token) {
+            return;
+        }
+
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            handleNotificationClick(token);
+        }
+    };
 
     useEffect(() => {
         let active = true;
@@ -31,6 +64,9 @@ export const NotificationPopover = () => {
                         message?: string;
                         details?: string;
                         organizationName?: string;
+                        organizationSlug?: string;
+                        slug?: string;
+                        token?: string;
                     };
                     read: boolean;
                     createdAt: string;
@@ -45,17 +81,22 @@ export const NotificationPopover = () => {
                             id: notification.id,
                             type: "INVITE_SENT" as const,
                             message:
-                                notification.data.message ??
-                                `You were invited to join ${notification.data.organizationName ?? "an organization"}`,
+                                `You were invited to join  "${notification.data.organizationName ?? "an organization"
+                                }"`,
                             details: notification.data.details,
                             createdAt: new Date(notification.createdAt),
                             read: notification.read,
+                            inviteToken: notification.data.token,
+                            orgName: notification.data.organizationName,
+                            orgSlug:
+                                notification.data.organizationSlug ?? notification.data.slug,
                         }))
                         .filter((item) => !existingIds.has(item.id));
 
                     return [...historyItems, ...prev];
                 });
             } catch (error) {
+                toast.error("Unable to load notification history")
                 console.error("Unable to load notification history", error);
             }
         };
@@ -74,15 +115,19 @@ export const NotificationPopover = () => {
 
         let message: string | null = null;
         let details: string | undefined;
+        let inviteToken: string | undefined;
+        let orgSlug: string | undefined;
 
         switch (e.type) {
             case "INVITE_SENT":
-                message = `You were invited to join ${e.payload.organizationName}`;
+                message = `You were invited to join "${e.payload.organizationName}"`;
                 details = `${e.payload.invitedByName} invited ${e.payload.invitedEmail} as ${e.payload.role}`;
+                inviteToken = e.payload.token;
+                orgSlug = e.payload.organizationSlug;
                 break;
 
             case "INVITE_ACCEPTED":
-                message = `${e.payload.joinedUserName} joined ${e.payload.organizationName}`;
+                message = `${e.payload.joinedUserName} joined "${e.payload.organizationName}"`;
                 details = `Organization: ${e.payload.organizationName}`;
                 break;
 
@@ -98,15 +143,15 @@ export const NotificationPopover = () => {
                 createdAt: new Date(),
                 read: false,
                 details,
+                inviteToken,
+                orgSlug,
             },
             ...prev,
         ]);
     });
 
     const markAllAsRead = () => {
-        setNotifications((prev) =>
-            prev.map((n) => ({ ...n, read: true }))
-        );
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     };
 
     return (
@@ -123,9 +168,7 @@ export const NotificationPopover = () => {
                             {unreadCount}
                         </Badge>
                     )}
-
                 </Button>
-
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0">
                 {/* Header */}
@@ -148,23 +191,49 @@ export const NotificationPopover = () => {
                             No notifications yet
                         </p>
                     ) : (
-                        notifications.map((n) => (
-                            <div
-                                key={n.id}
-                                className={`px-4 py-3 text-sm border-b last:border-b-0 ${!n.read ? "bg-muted/50" : ""}`}
-                            >
-                                <p>{n.message}</p>
-                                <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-0.5">
-                                    <span>{n.createdAt.toLocaleTimeString()}</span>
-                                    {n.details && (
-                                        <span className="text-[11px] truncate">{n.details}</span>
-                                    )}
-                                </div>
-                            </div>
-                        ))
+                        notifications.map((n) => {
+                            const isClickable = Boolean(n.inviteToken);
+
+                            return (
+                                <Item
+                                    key={n.id}
+                                    role={isClickable ? "button" : undefined}
+                                    tabIndex={isClickable ? 0 : undefined}
+                                    onClick={
+                                        isClickable
+                                            ? () => handleNotificationClick(n.inviteToken, n.orgName)
+                                            : undefined
+                                    }
+                                    onKeyDown={
+                                        isClickable
+                                            ? (event) =>
+                                                handleNotificationKeyDown(event, n.inviteToken)
+                                            : undefined
+                                    }
+                                    className={`px-4 py-3 text-sm border-b rounded-none gap-1 last:border-b-0 ${!n.read ? "bg-muted/50" : ""
+                                        } ${isClickable
+                                            ? "cursor-pointer transition-colors hover:bg-muted/70"
+                                            : ""
+                                        }`}
+                                >
+                                    <ItemHeader>{n.message}</ItemHeader>
+                                    <ItemContent className="text-xs text-muted-foreground mt-1 flex flex-col gap-0.5">
+                                        {n.details && (
+                                            <span className="text-[11px] truncate">{n.details}</span>
+                                        )}
+                                        {n.orgSlug && (
+                                            <span className="text-[11px] truncate">Slug: {n.orgSlug}</span>
+                                        )}
+                                    </ItemContent>
+                                    <ItemFooter className="text-xs">
+                                        <span>{format(n.createdAt, "MMM dd, yyyy")}</span>
+                                    </ItemFooter>
+                                </Item>
+                            );
+                        })
                     )}
                 </div>
             </PopoverContent>
         </Popover>
-    )
-}
+    );
+};

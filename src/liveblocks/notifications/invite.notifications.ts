@@ -6,6 +6,7 @@ import { NotificationType } from "@/generated/prisma";
 type InviteSentPayload = {
     email: string;
     organizationName: string;
+    organizationSlug: string;
     role: string;
     invitedByName: string;
     token: string;
@@ -48,7 +49,8 @@ export const notifyInviteSent = async (payload: InviteSentPayload) => {
                     invitedEmail: payload.email,
                     role: payload.role,
                     organizationName: payload.organizationName,
-                    inviteUrl: `${process.env.NEXT_PUBLIC_APP_URL}/invite/${payload.token}`,
+                    organizationSlug: payload.organizationSlug,
+                    token: payload.token,
                 },
             },
         });
@@ -59,10 +61,11 @@ export const notifyInviteSent = async (payload: InviteSentPayload) => {
             type: "INVITE_SENT",
             payload: {
                 organizationName: payload.organizationName,
+                organizationSlug: payload.organizationSlug,
                 role: payload.role,
                 invitedByName: payload.invitedByName,
                 invitedEmail: payload.email,
-                inviteUrl: `${process.env.NEXT_PUBLIC_APP_URL}/invite/${payload.token}`,
+                token: payload.token,
             },
         });
     }
