@@ -1,13 +1,20 @@
 import { useEventListener } from "@liveblocks/react";
 
+type InviteEvent = {
+  type?: "invite.created" | "invite.accepted" | "invite.bulkAccepted";
+};
+
 export function useInviteRealtime(refetch: () => void) {
   useEventListener(({ event }) => {
-    if (!event?.type) return;
+    if (!event || typeof event !== "object" || event === null) return;
+
+    const typedEvent = event as InviteEvent;
+    if (!typedEvent.type) return;
 
     if (
-      event.type === "invite.created" ||
-      event.type === "invite.accepted" ||
-      event.type === "invite.bulkAccepted"
+      typedEvent.type === "invite.created" ||
+      typedEvent.type === "invite.accepted" ||
+      typedEvent.type === "invite.bulkAccepted"
     ) {
       refetch(); // pull fresh truth from DB
     }

@@ -5,7 +5,7 @@ import {
     TRPCQueryOptions,
     type ResolverDef,
 } from '@trpc/tanstack-react-query';
-import { cache } from 'react';;
+import { cache } from 'react';
 
 
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { makeQueryClient } from './query-client';
 import { appRouter } from '@/server/router';
 import { headers } from "next/headers";
+import { createSessionClient } from "@/server/appwriter";
 // IMPORTANT: Create a stable getter for the query client that
 //            will return the same client during the same request.
 export const getQueryClient = cache(makeQueryClient);
@@ -24,10 +25,13 @@ const createServerTRPCContext = async () => {
     const headerObj = Object.fromEntries(incomingHeaders.entries());
     const req = new Request("http://localhost/api/trpc", { headers: headerObj });
     const resHeaders = new Headers();
+    const sessionClient = await createSessionClient({ optional: true });
+    const storage = sessionClient?.storage ?? null;
     return {
         req,
         resHeaders,
         setCookie: (cookie: string) => resHeaders.append("Set-Cookie", cookie),
+        storage,
     };
 };
 

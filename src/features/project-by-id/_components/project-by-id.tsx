@@ -16,6 +16,7 @@ import {
     ExternalLinkIcon,
     PencilIcon,
     Trash2Icon,
+    FileTextIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -87,6 +88,7 @@ import { DataCalendar } from "./data-calender";
 import { useTaskDetails } from "../hooks/use-task-details";
 import { BadgeTaskStatus } from "@/components/ui/badge-task-status";
 import { DottedSeparator } from "@/components/dotted-separator";
+import { Editor } from "./editor";
 
 export const ProjectTaskErrorView = () => {
     return <ErrorView message="Error loading tasks of projects" />;
@@ -309,7 +311,7 @@ const SearchSection = () => {
                         </SelectItem>
                     ) : (
                         membersList?.map(({ email, id }) => (
-                            <SelectItem value={id}>{email}</SelectItem>
+                            <SelectItem key = {id} value={id}>{email}</SelectItem>
                         ))
                     )}
                 </SelectContent>
@@ -472,6 +474,10 @@ export const TaskTabs = () => {
                     <CalendarIcon className=" size-4" />
                     Calendar
                 </TabsTrigger>
+                <TabsTrigger value="document" className=" px-5">
+                    <FileTextIcon className=" size-4" />
+                    Document
+                </TabsTrigger>
             </TabsList>
             <TabsContent value="task">
                 <TaskTable
@@ -488,6 +494,9 @@ export const TaskTabs = () => {
             </TabsContent>
             <TabsContent value="calender">
                 <DataCalendar data={data.tasks} />
+            </TabsContent>
+            <TabsContent value = "document">
+                <Editor/>
             </TabsContent>
         </Tabs>
     );

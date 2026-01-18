@@ -1,7 +1,7 @@
 "use client"
 
 import { useTRPC } from "@/trpc/trpc-client-provider";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { useTaskParams } from "./use-taks-params";
@@ -10,7 +10,12 @@ import { useTaskParams } from "./use-taks-params";
 export const useCreateTask = () => {
     const queryClient = useQueryClient();
     const trpc = useTRPC();
-    const { id } = useParams<{ id?: string }>();
+    const { id, slug } = useParams<{ id?: string; slug?: string }>();
+
+
+    if (!slug) {
+        throw new Error("Organization slug is required to load organization.");
+    };
 
     return useMutation(
         trpc.task.create.mutationOptions({
@@ -25,6 +30,12 @@ export const useCreateTask = () => {
 
                     queryClient.invalidateQueries(
                         trpc.task.getProjectPerformance.queryOptions({ projectId })
+                    );
+
+                    queryClient.invalidateQueries(
+                        trpc.task.getMyTasks.queryOptions({
+                            organizationSlug: slug
+                        }),
                     );
                 }
             },
@@ -65,7 +76,12 @@ export const useSuspenseTasks = () => {
 export const useUpdateTask = () => {
     const queryClient = useQueryClient();
     const trpc = useTRPC();
-    const { id } = useParams<{ id?: string }>();
+    const { id, slug } = useParams<{ id?: string; slug?: string }>();
+
+
+    if (!slug) {
+        throw new Error("Organization slug is required to load organization.");
+    };
 
     return useMutation(
         trpc.task.update.mutationOptions({
@@ -80,6 +96,12 @@ export const useUpdateTask = () => {
 
                     queryClient.invalidateQueries(
                         trpc.task.getProjectPerformance.queryOptions({ projectId })
+                    );
+
+                    queryClient.invalidateQueries(
+                        trpc.task.getMyTasks.queryOptions({
+                            organizationSlug: slug
+                        }),
                     );
                 }
             },
@@ -96,7 +118,12 @@ export const useUpdateTask = () => {
 export const useRemoveTask = () => {
     const queryClient = useQueryClient();
     const trpc = useTRPC();
-    const { id } = useParams<{ id?: string }>();
+    const { id, slug } = useParams<{ id?: string; slug?: string }>();
+
+
+    if (!slug) {
+        throw new Error("Organization slug is required to load organization.");
+    };
 
     return useMutation(
         trpc.task.remove.mutationOptions({
@@ -111,6 +138,12 @@ export const useRemoveTask = () => {
 
                     queryClient.invalidateQueries(
                         trpc.task.getProjectPerformance.queryOptions({ projectId })
+                    );
+
+                    queryClient.invalidateQueries(
+                        trpc.task.getMyTasks.queryOptions({
+                            organizationSlug: slug
+                        }),
                     );
                 }
 
@@ -128,7 +161,12 @@ export const useRemoveTask = () => {
 export const useChangeTaskPositionStatus = () => {
     const queryClient = useQueryClient();
     const trpc = useTRPC();
-    const { id } = useParams<{ id?: string }>();
+    const { id, slug } = useParams<{ id?: string; slug?: string }>();
+
+
+    if (!slug) {
+        throw new Error("Organization slug is required to load organization.");
+    };
 
     return useMutation(
         trpc.task.changePosition.mutationOptions({
@@ -144,6 +182,12 @@ export const useChangeTaskPositionStatus = () => {
                     queryClient.invalidateQueries(
                         trpc.task.getProjectPerformance.queryOptions({ projectId })
                     );
+
+                    queryClient.invalidateQueries(
+                        trpc.task.getMyTasks.queryOptions({
+                            organizationSlug: slug
+                        }),
+                    );
                 }
             },
             onError: (data) => {
@@ -158,7 +202,12 @@ export const useChangeTaskPositionStatus = () => {
 export const useRemoveAllTasks = () => {
     const queryClient = useQueryClient();
     const trpc = useTRPC();
-    const { id } = useParams<{ id?: string }>();
+    const { id, slug } = useParams<{ id?: string; slug?: string }>();
+
+
+    if (!slug) {
+        throw new Error("Organization slug is required to load organization.");
+    };
 
     return useMutation(
         trpc.task.removeAll.mutationOptions({
@@ -174,12 +223,34 @@ export const useRemoveAllTasks = () => {
                     queryClient.invalidateQueries(
                         trpc.task.getProjectPerformance.queryOptions({ projectId })
                     );
+
+                    queryClient.invalidateQueries(
+                        trpc.task.getMyTasks.queryOptions({
+                            organizationSlug: slug
+                        }),
+                    );
                 }
             },
             onError: (data) => {
                 console.log("Task moved Error:", data.message);
                 toast.error(data.message);
             },
-        })
-    )
-}
+        }),
+    );
+};
+
+// Hook to get my tasks
+export const useGetMyTasks = () => {
+    const trpc = useTRPC();
+    const { slug } = useParams<{ slug?: string }>();
+
+    if (!slug) {
+        throw new Error("Organization slug is required to load organization.");
+    };
+
+    return useQuery(
+        trpc.task.getMyTasks.queryOptions({
+            organizationSlug: slug
+        }),
+    );
+};

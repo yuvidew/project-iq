@@ -150,24 +150,22 @@ model OrganizationMember {
 model Project {
   id String @id @default(cuid())
 
-  // Basic info
   name        String
   description String?
 
-  // Status & priority
+  documents ProjectDocument[]
+
   status   ProjectStatus   @default(PLANNING)
   priority ProjectPriority @default(MEDIUM)
 
-  // Dates
   startDate DateTime?
   endDate   DateTime?
 
-  // Relations
   organizationSlug String
   organization     Organization @relation(fields: [organizationSlug], references: [slug], onDelete: Cascade)
 
   projectLeadEmail String?
-  projectLead      User?   @relation("ProjectLead", fields: [projectLeadEmail], references: [email])
+  projectLead      User? @relation("ProjectLead", fields: [projectLeadEmail], references: [email])
 
   members ProjectMember[]
   tasks   Task[]
@@ -178,6 +176,22 @@ model Project {
   @@index([organizationSlug])
   @@map("project")
 }
+
+model ProjectDocument {
+  id String @id @default(cuid())
+
+  name String
+  document String // URL / text / path
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@map("project_document")
+}
+
 
 model ProjectMember {
   id Int @id @default(autoincrement())
