@@ -17,16 +17,15 @@ import { SettingsIcon, UsersIcon, LogOutIcon, MoonIcon, SunIcon, FolderOpenIcon,
 
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-// import { authClient } from "@/lib/auth-client"
 import { useEffect, useState } from "react";
 import { Spinner } from "./ui/spinner";
-// import { useHasActiveSubscription } from "@/features/subscriptions/hooks/use-subscriptions"
 import { useTheme } from "next-themes";
 import { OrgSwitcher } from "./org-switcher";
 import { CreateOrganizationForm } from "@/features/organization/_components/create-organization-form";
 import { authClient } from "@/lib/auth-client";
 import { ParamValue } from "next/dist/server/request/params";
 import { MyTaskList } from "./my-task-list";
+import { AllTaskDialog } from "./all-task-dialog";
 
 const menu_Items = (slug :ParamValue) => [
         {
@@ -62,6 +61,8 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
     const [isSignOutLoading, setIsSignOutLoading] = useState(false);
     const { setTheme, theme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
+
+    const [openAllTask, setOpenAllTasks] = useState(false);
 
     const router = useRouter()
     const pathname = usePathname()
@@ -162,6 +163,8 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
             </Sidebar>
 
             <CreateOrganizationForm open={open} setOpen={setOpen} />
+
+            <AllTaskDialog />
         </>
     )
 }

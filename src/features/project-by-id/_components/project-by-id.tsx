@@ -89,6 +89,7 @@ import { useTaskDetails } from "../hooks/use-task-details";
 import { BadgeTaskStatus } from "@/components/ui/badge-task-status";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { Editor } from "./editor";
+import { DocumentLists } from "./document-list";
 
 export const ProjectTaskErrorView = () => {
     return <ErrorView message="Error loading tasks of projects" />;
@@ -496,7 +497,7 @@ export const TaskTabs = () => {
                 <DataCalendar data={data.tasks} />
             </TabsContent>
             <TabsContent value = "document">
-                <Editor/>
+                <DocumentLists/>
             </TabsContent>
         </Tabs>
     );

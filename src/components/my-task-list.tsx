@@ -11,10 +11,11 @@ import {
 import { Skeleton } from "./ui/skeleton";
 import { TaskStatus } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
+import { useAllTasksDialog } from "@/hooks/use-all-tasks";
 
 const SidebarMenuItems = () =>
     [1, 2, 3].map((idx) => (
-        <Skeleton key={idx} className="w-full h-7 rounded-sm" />
+        <Skeleton key={idx} className="w-full h-14 rounded-sm" />
     ));
 
 export const getStatusStyle = (status: TaskStatus) => {
@@ -60,6 +61,8 @@ export const getStatusStyle = (status: TaskStatus) => {
 export const MyTaskList = () => {
     const { data, isFetching } = useGetMyTasks();
 
+    const {setOpen} = useAllTasksDialog();
+
     return (
         <SidebarGroup>
             <SidebarGroupLabel>My Tasks {data?.length || 0}</SidebarGroupLabel>
@@ -68,7 +71,7 @@ export const MyTaskList = () => {
                     {isFetching ? (
                         <SidebarMenuItems />
                     ) : data?.length ? (
-                        data.map(({ status, name }, index) => (
+                        (data?.length <= 3 ? data : data?.slice(0, 3)).map(({ status, name }, index) => (
                             <SidebarMenuButton key={index} className="h-14">
                                 <span
                                     className={cn(
@@ -91,6 +94,12 @@ export const MyTaskList = () => {
                             No tasks yet
                         </SidebarMenuButton>
                     )}
+
+                    {data !== undefined && data?.length > 3 && (
+                        <button onClick={() => setOpen(true)} className="text-center text-sm text-muted-foreground">See more</button>
+                    )}
+
+
                 </SidebarMenu>
             </SidebarGroupContent>
         </SidebarGroup>
