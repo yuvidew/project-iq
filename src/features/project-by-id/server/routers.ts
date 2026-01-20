@@ -152,17 +152,37 @@ export const taskRouter = router({
                 }
             };
         }),
-    
-    getTaskByUserIdAndOrgSlug : protectedProcedure
+
+    getMyTasks: protectedProcedure
         .input(
             z.object({
-                organizationSlug : z.string(),
+                organizationSlug: z.string(),
             })
-        ).query(async ({input, ctx}) => {
+        ).query(async ({ input, ctx }) => {
             const userId = ctx.auth.user.id;
-            const {organizationSlug} = input;
+            const { organizationSlug: slug } = input;
 
-            
+            // Find organization is present of not
+            const existing = await prisma.organization.findUnique({
+                where: { slug },
+            });
+
+            if (!existing) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Organization not found",
+                });
+            }
+
+            return await prisma.task.findMany({
+                where : {
+                    assigneeId : userId,
+                    project : {
+                        organizationSlug : slug
+                    },
+                },
+            });
+
         }),
 
     getOne: protectedProcedure

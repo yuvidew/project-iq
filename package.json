@@ -12,6 +12,8 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@blocknote/mantine": "^0.46.1",
+    "@blocknote/react": "^0.46.1",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.2",
     "@liveblocks/client": "^3.12.1",

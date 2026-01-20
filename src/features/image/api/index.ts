@@ -1,5 +1,6 @@
 import { APPWRITER_BUCKET_ID, ENDPOINT, PROJECT_ID } from "@/lib/config";
-import {  publicProcedure, router } from "@/server/trpc";
+import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "@/server/trpc";
 import { ID } from "node-appwrite";
 import { z } from "zod";
 
@@ -43,7 +44,12 @@ export const imageRouter = router({
 
             const appwriteFile = new File([byteArray], fileName, { type: mimeType });
 
-            const uploaded = await ctx.storage.createFile({
+            const storage = ctx.storage;
+            if (!storage) {
+                throw new TRPCError({ code: "UNAUTHORIZED", message: "Unauthorized" });
+            }
+
+            const uploaded = await storage.createFile({
                 bucketId: APPWRITER_BUCKET_ID,
                 fileId: ID.unique(),
                 file: appwriteFile,
