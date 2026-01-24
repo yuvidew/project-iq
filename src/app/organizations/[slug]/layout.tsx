@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/auth-utils";
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppHeader } from '@/components/app-header';
+import { AllTaskDialog } from '@/components/all-task-dialog';
 
 export default async function DashboardLayout({
     children,
@@ -21,6 +22,8 @@ export default async function DashboardLayout({
                 {/* end to header */}
 
                 {children}
+
+                <AllTaskDialog />
             </SidebarInset>
         </SidebarProvider>
     )

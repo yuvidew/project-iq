@@ -62,7 +62,6 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
     const { setTheme, theme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
-    const [openAllTask, setOpenAllTasks] = useState(false);
 
     const router = useRouter()
     const pathname = usePathname()
@@ -164,7 +163,7 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
 
             <CreateOrganizationForm open={open} setOpen={setOpen} />
 
-            <AllTaskDialog />
+            
         </>
     )
 }

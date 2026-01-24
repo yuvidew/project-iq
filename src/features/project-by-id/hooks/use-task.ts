@@ -254,3 +254,90 @@ export const useGetMyTasks = () => {
         }),
     );
 };
+
+// Hook to create Document 
+export const useCreateDocument = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+
+    const { id } = useParams<{ id?: string }>();
+
+    return useMutation(
+        trpc.task.createDocument.mutationOptions({
+            onSuccess: (data) => {
+                toast.success("Document created successfully");
+                const projectId = id ?? data.projectId;
+                if (projectId) {
+                    queryClient.invalidateQueries(
+                        trpc.task.getDocuments.queryOptions({ projectId })
+                    );
+                }
+            },
+            onError: (data) => {
+                console.log("Document creation Error:", data.message);
+                toast.error(data.message);
+            },
+        })
+    );
+};
+
+// Hook to update Document
+export const useUpdateDocument = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+    const { id } = useParams<{ id?: string }>();
+    return useMutation(
+        trpc.task.updateDocument.mutationOptions({
+            onSuccess: (data) => {
+                toast.success("Document updated successfully");
+                const projectId = id ?? data.projectId;
+                if (projectId) {
+                    queryClient.invalidateQueries(
+                        trpc.task.getDocuments.queryOptions({ projectId })
+                    );
+                }
+            },
+            onError: (data) => {
+                console.log("Document update Error:", data.message);
+                toast.error(data.message);
+            },
+        })
+    );
+};
+
+// Hook to get Documents
+export const useGetDocuments = () => {
+    const trpc = useTRPC();
+    const { id } = useParams<{ id?: string }>();
+
+    if (!id) {
+        throw new Error("Project id is required to load projects.");
+    }
+    return useQuery(
+        trpc.task.getDocuments.queryOptions({ projectId: id })
+    );
+};
+
+// Hook to remove Document
+export const useRemoveDocument = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+    const { id } = useParams<{ id?: string }>();
+    return useMutation(
+        trpc.task.removeDocument.mutationOptions({
+            onSuccess: (data) => {
+                toast.success("Document removed successfully");
+                const projectId = id ?? data.projectId;
+                if (projectId) {
+                    queryClient.invalidateQueries(
+                        trpc.task.getDocuments.queryOptions({ projectId })
+                    );
+                }
+            },
+            onError: (data) => {
+                console.log("Document remove Error:", data.message);
+                toast.error(data.message);
+            },
+        })
+    );
+}

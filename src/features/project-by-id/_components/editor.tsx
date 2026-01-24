@@ -5,12 +5,20 @@ import { useCreateBlockNote } from "@blocknote/react";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import {  useMemo } from "react";
+import { darkTheme, lightTheme } from "../lib";
 
-export const Editor = () => {
-    const [value, setValue] = useState<string>("")
+interface EditorProps {
+    value : string;
+    onChange : (value : string) => void;
+}
+
+export const Editor = ({ value, onChange }: EditorProps) => {
     const { resolvedTheme } = useTheme();
 
+    const theme = useMemo(() => {
+        return resolvedTheme === "dark" ? darkTheme : lightTheme;
+    }, [resolvedTheme]);
 
     const editor = useCreateBlockNote({
         initialContent:
@@ -19,15 +27,15 @@ export const Editor = () => {
     });
 
     return (
-        <section className="">
-                <BlockNoteView
-                    editor={editor}
-                    editable={true}
-                    theme={resolvedTheme === "dark" ? "dark" : "light"}
-                    onChange={() => {
-                        setValue(JSON.stringify(editor.document, null, 2));
-                    }}
-                />
+        <section >
+            <BlockNoteView
+                editor={editor}
+                editable={true}
+                theme={theme}
+                onChange={() => {
+                    onChange(JSON.stringify(editor.document, null, 2));
+                }}
+            />
         </section>
     )
 }

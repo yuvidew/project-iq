@@ -509,5 +509,153 @@ export const taskRouter = router({
             });
 
             return { deletedCount: deleted.count };
-        })
+        }),
+    createDocument : protectedProcedure
+        .input(
+            z.object({
+                projectId : z.string(),
+                name : z.string(),
+                document : z.string(),
+            })
+        )
+        .mutation ( async ({ input }) => {
+            const { projectId, name, document } = input;
+
+            const projectExisting = await prisma.project.findUnique({
+                where : { id : projectId  }
+            });
+
+            if (!projectExisting) {
+                throw new TRPCError({
+                    code : "NOT_FOUND",
+                    message : "Project not found"
+                });
+            }
+
+            return await prisma.projectDocument.create(
+                {
+                    data : {
+                        name,
+                        document,
+                        project : { connect : { id : projectId }}
+                    }
+                }
+            )
+        }),
+    getDocuments : protectedProcedure
+        .input(
+            z.object({
+                projectId: z.string(),
+                page: z.number().default(PAGINATION.DEFAULT_PAGE),
+                pageSize: z
+                    .number()
+                    .min(PAGINATION.MIN_PAGE_SIZE)
+                    .max(PAGINATION.MAX_PAGE_SIZE)
+                    .default(PAGINATION.DEFAULT_PAGE_SIZE),
+                search: z.string().default(""),
+            })
+        )
+        .query ( async ({ input }) => {
+            const { projectId, page, pageSize, search } = input;
+
+            const skip = (page - 1) * pageSize;
+
+            const searchTerm = search.trim();
+
+            const where: Prisma.ProjectDocumentWhereInput = {
+                projectId,
+                ...(searchTerm && {
+                    OR: [
+                        { name: { contains: searchTerm, mode: "insensitive" as const } },
+                    ],
+                }),
+            };
+
+            const projectExisting = await prisma.project.findUnique({
+                where : { id : projectId  }
+            });
+
+            if (!projectExisting) {
+                throw new TRPCError({
+                    code : "NOT_FOUND",
+                    message : "Project not found"
+                });
+            };
+
+            const [ total, documents ] = await Promise.all([
+                prisma.projectDocument.count({ where }),
+                prisma.projectDocument.findMany({
+                    where,
+                    orderBy: { createdAt: "desc" },
+                    skip,
+                    take: pageSize,
+                })
+            ]);
+            
+            return {
+                documents,
+                meta: {
+                    page,
+                    pageSize,
+                    total,
+                    totalPages: Math.ceil(total / pageSize),
+                }
+            };
+        }
+        ),
+
+    updateDocument : protectedProcedure
+        .input(
+            z.object({
+                id : z.string(),
+                name : z.string(),
+                document : z.string(),
+            })
+        )
+        .mutation ( async ({ input }) => {
+            const { id, name, document } = input;
+            const existingDoc = await prisma.projectDocument.findUnique({
+                where : { id }
+            });
+            if (!existingDoc) {
+                throw new TRPCError({
+                    code : "NOT_FOUND",
+                    message : "Document not found"
+                });
+            }
+
+            return await prisma.projectDocument.update(
+                {
+                    where : { id },
+                    data : {
+                        name,
+                        document,
+                    }
+                }
+            );
+        }),
+
+        removeDocument : protectedProcedure
+        .input(
+            z.object({
+                id : z.string(),
+            })
+        )
+        .mutation ( async ({ input }) => {
+            const { id } = input;
+            const existingDoc = await prisma.projectDocument.findUnique({
+                where : { id }
+            });
+            if (!existingDoc) {
+                throw new TRPCError({
+                    code : "NOT_FOUND",
+                    message : "Document not found"
+                });
+            }
+            return await prisma.projectDocument.delete(
+                {
+                    where : { id }
+                }
+            );
+        }),
 });
