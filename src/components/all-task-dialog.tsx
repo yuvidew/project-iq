@@ -1,3 +1,5 @@
+"use client"
+
 import {
     Dialog,
     DialogContent,
@@ -16,7 +18,6 @@ import {
     CommandList,
 } from "@/components/ui/command"
 import { useGetMyTasks } from "@/features/project-by-id/hooks/use-task";
-import { Skeleton } from "./ui/skeleton";
 import { TaskStatus } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
 

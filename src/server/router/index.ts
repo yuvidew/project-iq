@@ -20,7 +20,8 @@ export const appRouter = router({
     organizationBySlug : organizationBySlugRouter,
     task : taskRouter,
     teams : teamsRouter,
-    invite : inviteRouter
+    invite : inviteRouter,
+    
 });
 
 export type AppRouter = typeof appRouter;
