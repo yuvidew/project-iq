@@ -11,9 +11,10 @@ import { darkTheme, lightTheme } from "../lib";
 interface EditorProps {
     value : string;
     onChange : (value : string) => void;
+    isEditable?: boolean;
 }
 
-export const Editor = ({ value, onChange }: EditorProps) => {
+export const Editor = ({ value, onChange, isEditable = true }: EditorProps) => {
     const { resolvedTheme } = useTheme();
 
     const theme = useMemo(() => {
@@ -30,7 +31,7 @@ export const Editor = ({ value, onChange }: EditorProps) => {
         <section >
             <BlockNoteView
                 editor={editor}
-                editable={true}
+                editable={isEditable}
                 theme={theme}
                 onChange={() => {
                     onChange(JSON.stringify(editor.document, null, 2));

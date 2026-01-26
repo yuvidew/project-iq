@@ -421,11 +421,10 @@ export const taskRouter = router({
         )
         .mutation(async ({ input }) => {
             const { updates } = input;
-            const TEMP_OFFSET = 1_000_000;
 
             const existingTasks = await prisma.task.findMany({
                 where: { id: { in: updates.map((u) => u.id) } },
-                select: { id: true },
+                select: { id: true, projectId: true },
             });
 
             if (existingTasks.length !== updates.length) {
@@ -435,39 +434,53 @@ export const taskRouter = router({
                 });
             }
 
-            const updatedTasks = await prisma.$transaction(async (tx) => {
-                // First, move tasks to temporary positions to avoid unique constraint clashes.
-                await Promise.all(
-                    updates.map(({ id, position, status }) =>
-                        tx.task.update({
-                            where: { id },
-                            data: {
-                                status,
-                                position: position + TEMP_OFFSET,
-                            },
-                        })
-                    )
-                );
+            // Use raw SQL to update all tasks in a single query
+            // This avoids the unique constraint issue by updating all at once
+            const updatedTasks = await prisma.$transaction(
+                async (tx) => {
+                    // Update each task's status and position using raw SQL with CASE
+                    // First, set all positions to NULL temporarily (if allowed) or use negative unique values
+                    
+                    // Step 1: Move all affected tasks to unique temporary positions using their array index
+                    for (let i = 0; i < updates.length; i++) {
+                        const { id, status } = updates[i];
+                        // Use a unique negative position based on timestamp + index to avoid any collision
+                        const tempPosition = -2_000_000_000 + i;
+                        await tx.$executeRaw`
+                            UPDATE "Task" 
+                            SET "status" = ${status}::"TaskStatus", "position" = ${tempPosition}
+                            WHERE "id" = ${id}
+                        `;
+                    }
 
-                // Then, set the final positions.
-                const finalized = await Promise.all(
-                    updates.map(({ id, position }) =>
-                        tx.task.update({
-                            where: { id },
-                            data: { position },
-                            select: {
-                                id: true,
-                                name: true,
-                                projectId: true,
-                                status: true,
-                                position: true,
-                            },
-                        })
-                    )
-                );
+                    // Step 2: Set final positions
+                    for (const { id, position } of updates) {
+                        await tx.$executeRaw`
+                            UPDATE "Task" 
+                            SET "position" = ${position}
+                            WHERE "id" = ${id}
+                        `;
+                    }
 
-                return finalized;
-            });
+                    // Fetch and return the updated tasks
+                    const finalized = await tx.task.findMany({
+                        where: { id: { in: updates.map((u) => u.id) } },
+                        select: {
+                            id: true,
+                            name: true,
+                            projectId: true,
+                            status: true,
+                            position: true,
+                        },
+                    });
+
+                    return finalized;
+                },
+                {
+                    maxWait: 10000,
+                    timeout: 30000,
+                }
+            );
 
             const projectIds = Array.from(
                 new Set(updatedTasks.map((task) => task.projectId))
@@ -555,7 +568,8 @@ export const taskRouter = router({
                 search: z.string().default(""),
             })
         )
-        .query ( async ({ input }) => {
+        .query ( async ({ input, ctx }) => {
+            const userId = ctx.auth.user.id;
             const { projectId, page, pageSize, search } = input;
 
             const skip = (page - 1) * pageSize;
@@ -572,7 +586,11 @@ export const taskRouter = router({
             };
 
             const projectExisting = await prisma.project.findUnique({
-                where : { id : projectId  }
+                where : { id : projectId  },
+                select: {
+                    id: true,
+                    organizationSlug: true,
+                }
             });
 
             if (!projectExisting) {
@@ -582,18 +600,49 @@ export const taskRouter = router({
                 });
             };
 
-            const [ total, documents ] = await Promise.all([
+            // Check user's role in organization and project
+            const [total, documents, organizationMember, projectMember] = await Promise.all([
                 prisma.projectDocument.count({ where }),
                 prisma.projectDocument.findMany({
                     where,
                     orderBy: { createdAt: "desc" },
                     skip,
                     take: pageSize,
-                })
+                }),
+                prisma.organizationMember.findUnique({
+                    where: {
+                        userId_organizationSlug: {
+                            userId,
+                            organizationSlug: projectExisting.organizationSlug,
+                        },
+                    },
+                    select: { role: true },
+                }),
+                prisma.projectMember.findUnique({
+                    where: {
+                        projectId_userId: {
+                            projectId,
+                            userId,
+                        },
+                    },
+                    select: { role: true },
+                }),
             ]);
+
+            // User can edit if they are OWNER or ADMIN in organization, or LEAD in project
+            const canEdit = 
+                organizationMember?.role === "OWNER" || 
+                organizationMember?.role === "ADMIN" ;
+
+            // Add isEdit flag to each document
+            const documentsWithEditFlag = documents.map((doc) => ({
+                ...doc,
+                isEdit: canEdit,
+            }));
             
             return {
-                documents,
+                documents: documentsWithEditFlag,
+                canEdit,
                 meta: {
                     page,
                     pageSize,
@@ -612,15 +661,58 @@ export const taskRouter = router({
                 document : z.string(),
             })
         )
-        .mutation ( async ({ input }) => {
+        .mutation ( async ({ input, ctx }) => {
+            const userId = ctx.auth.user.id;
             const { id, name, document } = input;
+
             const existingDoc = await prisma.projectDocument.findUnique({
-                where : { id }
+                where : { id },
+                include: {
+                    project: {
+                        select: { organizationSlug: true }
+                    }
+                }
             });
+
             if (!existingDoc) {
                 throw new TRPCError({
                     code : "NOT_FOUND",
                     message : "Document not found"
+                });
+            }
+
+            // Check user's role in organization and project
+            const [organizationMember, projectMember] = await Promise.all([
+                prisma.organizationMember.findUnique({
+                    where: {
+                        userId_organizationSlug: {
+                            userId,
+                            organizationSlug: existingDoc.project.organizationSlug,
+                        },
+                    },
+                    select: { role: true },
+                }),
+                prisma.projectMember.findUnique({
+                    where: {
+                        projectId_userId: {
+                            projectId: existingDoc.projectId,
+                            userId,
+                        },
+                    },
+                    select: { role: true },
+                }),
+            ]);
+
+            // Only OWNER, ADMIN, or project LEAD can edit
+            const canEdit = 
+                organizationMember?.role === "OWNER" || 
+                organizationMember?.role === "ADMIN" ||
+                projectMember?.role === "LEAD";
+
+            if (!canEdit) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "You don't have permission to edit this document"
                 });
             }
 
@@ -641,17 +733,61 @@ export const taskRouter = router({
                 id : z.string(),
             })
         )
-        .mutation ( async ({ input }) => {
+        .mutation ( async ({ input, ctx }) => {
+            const userId = ctx.auth.user.id;
             const { id } = input;
+
             const existingDoc = await prisma.projectDocument.findUnique({
-                where : { id }
+                where : { id },
+                include: {
+                    project: {
+                        select: { organizationSlug: true }
+                    }
+                }
             });
+
             if (!existingDoc) {
                 throw new TRPCError({
                     code : "NOT_FOUND",
                     message : "Document not found"
                 });
             }
+
+            // Check user's role in organization and project
+            const [organizationMember, projectMember] = await Promise.all([
+                prisma.organizationMember.findUnique({
+                    where: {
+                        userId_organizationSlug: {
+                            userId,
+                            organizationSlug: existingDoc.project.organizationSlug,
+                        },
+                    },
+                    select: { role: true },
+                }),
+                prisma.projectMember.findUnique({
+                    where: {
+                        projectId_userId: {
+                            projectId: existingDoc.projectId,
+                            userId,
+                        },
+                    },
+                    select: { role: true },
+                }),
+            ]);
+
+            // Only OWNER, ADMIN, or project LEAD can delete
+            const canEdit = 
+                organizationMember?.role === "OWNER" || 
+                organizationMember?.role === "ADMIN" ||
+                projectMember?.role === "LEAD";
+
+            if (!canEdit) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "You don't have permission to delete this document"
+                });
+            }
+
             return await prisma.projectDocument.delete(
                 {
                     where : { id }

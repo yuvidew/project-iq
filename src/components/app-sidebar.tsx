@@ -11,6 +11,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar"
 import { SettingsIcon, UsersIcon, LogOutIcon, MoonIcon, SunIcon, FolderOpenIcon, LayoutGridIcon } from "lucide-react";
 
@@ -61,6 +62,9 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
     const [isSignOutLoading, setIsSignOutLoading] = useState(false);
     const { setTheme, theme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
+    const { state } = useSidebar();
+
+    const isCollapsed = state === "collapsed";
 
 
     const router = useRouter()
@@ -129,7 +133,7 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
                     ))}
 
                     {/* start to my tasks */}
-                    <MyTaskList/>
+                    {!isCollapsed && <MyTaskList/>}
                     {/* end to my tasks */}
                 </SidebarContent>
                 <SidebarFooter>

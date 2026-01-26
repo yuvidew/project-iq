@@ -1,10 +1,11 @@
 import {create} from "zustand";
 
 type DocumentSchemaValue = {
-    name: string;
-    projectId: string;
     document: string;
     id? : string;
+    isEdit: boolean;
+    name: string;
+    projectId: string;
 }
 
 interface CreateDocument {
@@ -24,6 +25,7 @@ export const useCreateDocumentDialog = create<CreateDocument>((set) => ({
 
 
     document: {
+        isEdit: true,
         name: "Untitled Document",
         projectId: "",
         document: "",
