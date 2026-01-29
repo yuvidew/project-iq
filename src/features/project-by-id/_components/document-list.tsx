@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { SearchBox } from "@/components/search_box";
 import {
     EllipsisVerticalIcon,
@@ -49,9 +50,11 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { Editor } from "./editor";
 import {
+    useChatWithDocument,
     useCreateDocument,
     useGetDocuments,
     useRemoveDocument,
@@ -65,6 +68,10 @@ import { ErrorView } from "@/components/error-view";
 import { LoadingView } from "@/components/loading-view";
 import { format } from "date-fns";
 import { useDocumentParams } from "../hooks/use-taks-params";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github.css";
 
 export const ProjectDocumentsErrorView = () => {
     return <ErrorView message="Error loading documents of projects" />;
@@ -74,10 +81,51 @@ export const ProjectDocumentsLoadingView = () => {
     return <LoadingView message="Loading documents of projects..." />;
 };
 
-const AiChatBox = () => {
-    // TODO: implement chat box functionality
+interface ChatMessage {
+    role: "user" | "assistant";
+    content: string;
+}
+
+const AiChatBox = ({ documentId }: { documentId?: string }) => {
+    const [input, setInput] = useState("");
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const { mutate: onAskGemini, isPending: isAsking } = useChatWithDocument();
+
+    const handleSendMessage = () => {
+        if (!input.trim() || isAsking) return;
+
+        const userMessage = input.trim();
+        setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+        setInput("");
+
+        onAskGemini(
+            { question: userMessage, id: documentId as string },
+            {
+                onSuccess: (data) => {
+                    setMessages((prev) => [
+                        ...prev,
+                        { role: "assistant", content: data.answer },
+                    ]);
+                },
+                onError: () => {
+                    setMessages((prev) => [
+                        ...prev,
+                        { role: "assistant", content: "Sorry, I couldn't process your request." },
+                    ]);
+                },
+            }
+        );
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    };
+
     return (
-        <Popover >
+        <Popover>
             <PopoverTrigger asChild>
                 <Button variant="outline" size={"icon-sm"}>
                     <SparklesIcon />
@@ -89,32 +137,70 @@ const AiChatBox = () => {
                         <SparklesIcon />
                     </Button>
 
-                    <div className="flex flex-col ">
+                    <div className="flex flex-col">
                         <h3 className="font-semibold text-sm">Chat Assistant</h3>
                         <p className="text-xs text-blue-100">Always here to help</p>
                     </div>
                 </div>
-                <div className="p-3 px-5">
-                    <p>This the chat box</p>
-                </div>
-                <div className=" p-4">
+
+                <ScrollArea className="h-96">
+                    <div className="px-5 py-3">
+                        {messages.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                                Ask me anything about this document!
+                            </p>
+                        ) : (
+                            <div className="flex flex-col gap-3">
+                                {messages.map((message, index) => (
+                                    <div
+                                        key={index}
+                                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                                    >
+                                        <div
+                                            className={`max-w-[80%] px-3 py-2 rounded-lg text-sm prose prose-sm break-words ${message.role === "user"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "bg-muted"
+                                                }`}
+                                        >
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkGfm]}
+                                                rehypePlugins={[rehypeHighlight]}
+                                            >
+                                                {message.content}
+                                            </ReactMarkdown>
+                                        </div>
+                                    </div>
+                                ))}
+                                {isAsking && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-muted px-3 py-2 rounded-lg">
+                                            <Spinner className="size-4" />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
+
+                <div className="p-4 border-t">
                     <div className="flex gap-2 items-center">
                         <input
                             type="text"
-                            // value={input}
-                            // onChange={(e) => setInput(e.target.value)}
-                            // onKeyPress={handleKeyPress}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={handleKeyPress}
                             placeholder="Type your message..."
-                            className="flex-1 px-4 py-2.5 border  rounded-lg focus:outline-none  resize-none text-sm"
-                        // disabled={isLoading}
+                            className="flex-1 px-4 py-2.5 border rounded-lg focus:outline-none resize-none text-sm"
+                            disabled={isAsking}
                         />
                         <Button
-                            // onClick={handleSendMessage}
-                            // disabled={isLoading || !input.trim()}
+                            onClick={handleSendMessage}
+                            disabled={isAsking || !input.trim()}
                             className="rounded-lg transition-colors flex items-center justify-center"
                             size="icon-sm"
                         >
-                            <SendIcon />
+                            {isAsking ? <Spinner className="size-4" /> : <SendIcon />}
                         </Button>
                     </div>
                 </div>
@@ -215,20 +301,22 @@ const DocumentDetail = () => {
                         {document.isEdit ? "Create New Document" : "View Document"}</SheetTitle>
                 </SheetHeader>
 
-                <div className="flex flex-col gap-3 px-3">
-                    <Input
-                        placeholder="Document Title"
-                        className="mb-4 w-full font-semibold border-none dark:bg-transparent text-3xl! bg-transparent outline-none ring-0 focus:ring-0"
-                        value={document.name}
-                        readOnly={!document.isEdit}
-                        onChange={(e) => setDocument({ ...document, name: e.target.value })}
-                    />
-                    <Editor
-                        isEditable={document.isEdit}
-                        value={document.document}
-                        onChange={(value) => setDocument({ ...document, document: value })}
-                    />
-                </div>
+                <ScrollArea className="flex-1 h-[calc(100vh-200px)]">
+                    <div className="flex flex-col gap-3 px-3">
+                        <Input
+                            placeholder="Document Title"
+                            className="mb-4 w-full font-semibold border-none dark:bg-transparent text-3xl! bg-transparent outline-none ring-0 focus:ring-0"
+                            value={document.name}
+                            readOnly={!document.isEdit}
+                            onChange={(e) => setDocument({ ...document, name: e.target.value })}
+                        />
+                        <Editor
+                            isEditable={document.isEdit}
+                            value={document.document}
+                            onChange={(value) => setDocument({ ...document, document: value })}
+                        />
+                    </div>
+                </ScrollArea>
 
                 <SheetFooter className="flex flex-row justify-end ">
                     {document.isEdit ? (
@@ -251,7 +339,7 @@ const DocumentDetail = () => {
                             </Button>
                         </>
                     ) : (
-                        <AiChatBox />
+                        <AiChatBox documentId={document.id} />
                     )}
                 </SheetFooter>
             </SheetContent>
@@ -266,9 +354,13 @@ interface DocumentsSearchAndCreateBtnProps {
 export const DocumentsSearchAndCreateBtn = ({ isCreateDoc }: DocumentsSearchAndCreateBtnProps) => {
     const { setOpen, setDocument } = useCreateDocumentDialog();
 
+
+
+
     return (
         <div className="flex items-center justify-between">
             <SearchBox placeholder="Search document.." />
+
 
             {isCreateDoc && (
                 <Button onClick={() => {

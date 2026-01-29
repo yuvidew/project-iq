@@ -7,10 +7,10 @@ type GeminiOptions = {
     fetch?: (input: RequestInfo, init?: RequestInit) => Promise<Response>
 }
 
+
+
 export const askGemini = async (
     question: string,
-    apiKey: string,
-    options?: GeminiOptions
 ) => {
     try {
         const model = google('gemini-2.5-flash')

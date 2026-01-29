@@ -340,4 +340,17 @@ export const useRemoveDocument = () => {
             },
         })
     );
+};
+
+// Hook to chat with ai related to document by id
+export const useChatWithDocument = () => {
+    const trpc = useTRPC();
+    return useMutation(
+        trpc.task.chatWithDocument.mutationOptions({
+            onError: (data) => {
+                console.log("Chat with document Error:", data.message);
+                toast.error(data.message);
+            },
+        })
+    );
 }
