@@ -3,7 +3,9 @@ import { PAGINATION } from "@/lib/config";
 import prisma from "@/lib/db";
 import { updateProjectStatus } from "@/server/helpers/updateProjectStatus";
 import { protectedProcedure, router } from "@/server/trpc";
+import { google } from "@ai-sdk/google";
 import { TRPCError } from "@trpc/server";
+import { generateText } from "ai";
 import z from "zod";
 
 export const taskRouter = router({
@@ -175,10 +177,10 @@ export const taskRouter = router({
             }
 
             return await prisma.task.findMany({
-                where : {
-                    assigneeId : userId,
-                    project : {
-                        organizationSlug : slug
+                where: {
+                    assigneeId: userId,
+                    project: {
+                        organizationSlug: slug
                     },
                 },
             });
@@ -440,7 +442,7 @@ export const taskRouter = router({
                 async (tx) => {
                     // Update each task's status and position using raw SQL with CASE
                     // First, set all positions to NULL temporarily (if allowed) or use negative unique values
-                    
+
                     // Step 1: Move all affected tasks to unique temporary positions using their array index
                     for (let i = 0; i < updates.length; i++) {
                         const { id, status } = updates[i];
@@ -523,39 +525,39 @@ export const taskRouter = router({
 
             return { deletedCount: deleted.count };
         }),
-    createDocument : protectedProcedure
+    createDocument: protectedProcedure
         .input(
             z.object({
-                projectId : z.string(),
-                name : z.string(),
-                document : z.string(),
+                projectId: z.string(),
+                name: z.string(),
+                document: z.string(),
             })
         )
-        .mutation ( async ({ input }) => {
+        .mutation(async ({ input }) => {
             const { projectId, name, document } = input;
 
             const projectExisting = await prisma.project.findUnique({
-                where : { id : projectId  }
+                where: { id: projectId }
             });
 
             if (!projectExisting) {
                 throw new TRPCError({
-                    code : "NOT_FOUND",
-                    message : "Project not found"
+                    code: "NOT_FOUND",
+                    message: "Project not found"
                 });
             }
 
             return await prisma.projectDocument.create(
                 {
-                    data : {
+                    data: {
                         name,
                         document,
-                        project : { connect : { id : projectId }}
+                        project: { connect: { id: projectId } }
                     }
                 }
             )
         }),
-    getDocuments : protectedProcedure
+    getDocuments: protectedProcedure
         .input(
             z.object({
                 projectId: z.string(),
@@ -568,7 +570,7 @@ export const taskRouter = router({
                 search: z.string().default(""),
             })
         )
-        .query ( async ({ input, ctx }) => {
+        .query(async ({ input, ctx }) => {
             const userId = ctx.auth.user.id;
             const { projectId, page, pageSize, search } = input;
 
@@ -586,7 +588,7 @@ export const taskRouter = router({
             };
 
             const projectExisting = await prisma.project.findUnique({
-                where : { id : projectId  },
+                where: { id: projectId },
                 select: {
                     id: true,
                     organizationSlug: true,
@@ -595,8 +597,8 @@ export const taskRouter = router({
 
             if (!projectExisting) {
                 throw new TRPCError({
-                    code : "NOT_FOUND",
-                    message : "Project not found"
+                    code: "NOT_FOUND",
+                    message: "Project not found"
                 });
             };
 
@@ -630,16 +632,16 @@ export const taskRouter = router({
             ]);
 
             // User can edit if they are OWNER or ADMIN in organization, or LEAD in project
-            const canEdit = 
-                organizationMember?.role === "OWNER" || 
-                organizationMember?.role === "ADMIN" ;
+            const canEdit =
+                organizationMember?.role === "OWNER" ||
+                organizationMember?.role === "ADMIN";
 
             // Add isEdit flag to each document
             const documentsWithEditFlag = documents.map((doc) => ({
                 ...doc,
                 isEdit: canEdit,
             }));
-            
+
             return {
                 documents: documentsWithEditFlag,
                 canEdit,
@@ -653,20 +655,20 @@ export const taskRouter = router({
         }
         ),
 
-    updateDocument : protectedProcedure
+    updateDocument: protectedProcedure
         .input(
             z.object({
-                id : z.string(),
-                name : z.string(),
-                document : z.string(),
+                id: z.string(),
+                name: z.string(),
+                document: z.string(),
             })
         )
-        .mutation ( async ({ input, ctx }) => {
+        .mutation(async ({ input, ctx }) => {
             const userId = ctx.auth.user.id;
             const { id, name, document } = input;
 
             const existingDoc = await prisma.projectDocument.findUnique({
-                where : { id },
+                where: { id },
                 include: {
                     project: {
                         select: { organizationSlug: true }
@@ -676,8 +678,8 @@ export const taskRouter = router({
 
             if (!existingDoc) {
                 throw new TRPCError({
-                    code : "NOT_FOUND",
-                    message : "Document not found"
+                    code: "NOT_FOUND",
+                    message: "Document not found"
                 });
             }
 
@@ -704,8 +706,8 @@ export const taskRouter = router({
             ]);
 
             // Only OWNER, ADMIN, or project LEAD can edit
-            const canEdit = 
-                organizationMember?.role === "OWNER" || 
+            const canEdit =
+                organizationMember?.role === "OWNER" ||
                 organizationMember?.role === "ADMIN" ||
                 projectMember?.role === "LEAD";
 
@@ -718,8 +720,8 @@ export const taskRouter = router({
 
             return await prisma.projectDocument.update(
                 {
-                    where : { id },
-                    data : {
+                    where: { id },
+                    data: {
                         name,
                         document,
                     }
@@ -727,18 +729,18 @@ export const taskRouter = router({
             );
         }),
 
-        removeDocument : protectedProcedure
+    removeDocument: protectedProcedure
         .input(
             z.object({
-                id : z.string(),
+                id: z.string(),
             })
         )
-        .mutation ( async ({ input, ctx }) => {
+        .mutation(async ({ input, ctx }) => {
             const userId = ctx.auth.user.id;
             const { id } = input;
 
             const existingDoc = await prisma.projectDocument.findUnique({
-                where : { id },
+                where: { id },
                 include: {
                     project: {
                         select: { organizationSlug: true }
@@ -748,8 +750,8 @@ export const taskRouter = router({
 
             if (!existingDoc) {
                 throw new TRPCError({
-                    code : "NOT_FOUND",
-                    message : "Document not found"
+                    code: "NOT_FOUND",
+                    message: "Document not found"
                 });
             }
 
@@ -776,8 +778,8 @@ export const taskRouter = router({
             ]);
 
             // Only OWNER, ADMIN, or project LEAD can delete
-            const canEdit = 
-                organizationMember?.role === "OWNER" || 
+            const canEdit =
+                organizationMember?.role === "OWNER" ||
                 organizationMember?.role === "ADMIN" ||
                 projectMember?.role === "LEAD";
 
@@ -790,8 +792,93 @@ export const taskRouter = router({
 
             return await prisma.projectDocument.delete(
                 {
-                    where : { id }
+                    where: { id }
                 }
             );
+        }),
+
+    chatWithDocument: protectedProcedure
+        .input(
+            z.object({
+                id: z.string(),
+                question: z.string().min(5),
+            })
+        )
+        .mutation(async ({ input }) => {
+            const { id, question } = input;
+            const existingDoc = await prisma.projectDocument.findUnique({
+                where: { id },
+                include: {
+                    project: {
+                        select: { organizationSlug: true }
+                    }
+                }
+            });
+
+            if (!existingDoc) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Document not found"
+                });
+            }
+
+            // Extract plain text from the document JSON (TipTap/ProseMirror format)
+            const extractTextFromDocument = (docJson: string): string => {
+    try {
+        const doc = JSON.parse(docJson);
+
+        interface DocumentNode {
+            type?: string;
+            text?: string;
+            content?: DocumentNode[];
+        }
+
+        const extractText = (node: DocumentNode): string => {
+            if (node.type === 'text' && node.text) {
+                return node.text;
+            }
+            if (node.content && Array.isArray(node.content)) {
+                const childText = node.content.map(extractText).join('');
+                if (['paragraph', 'heading', 'listItem', 'bulletList', 'orderedList', 'numberedListItem'].includes(node.type || '')) {
+                    return childText + '\n';
+                }
+                return childText;
+            }
+            return '';
+        };
+
+        if (Array.isArray(doc)) {
+            return doc.map(extractText).join('\n').trim();
+        } else {
+            return extractText(doc as DocumentNode).trim();
+        }
+    } catch {
+        return docJson;
+    }
+};
+
+            const documentText = extractTextFromDocument(existingDoc.document);
+
+
+            // Build prompt with document context
+            const prompt = `You are a helpful assistant for a project management application. Use the following document content as context to answer the user's question. If the answer cannot be found in the document, say so politely.
+
+Document Title: ${existingDoc.name}
+
+Document Content:
+${documentText}
+
+User Question: ${question}
+
+Please provide a clear, concise, and helpful answer based on the document content:`;
+
+            const model = google('gemini-2.5-flash');
+
+            const { text } = await generateText({
+                model,
+                prompt,
+            });
+
+            return { answer: text };
         }),
 });

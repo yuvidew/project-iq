@@ -116,33 +116,35 @@ const RecentTaskItem = ({ data }: RecentTaskItemProps) => {
 
     return (
         <Card className=" rounded-none border-none p-0 ">
-            <CardContent className=" flex items-start justify-between gap-3 px-4 py-5">
-                <div className=" bg-gray-50/10 p-1.5 rounded-sm mt-2">
-                    <SquareIcon className={` size-4 ${statusStyles[data.status].className}`} />
-                </div>
-                <div className=" flex flex-col items-start justify-start w-[80%] gap-2   ">
-                    <h4 className=" text-lg line-clamp-1 p-0">
-                        {data.name}
-                    </h4>
-                    {data.assignee && (
-                        <div className="flex items-start gap-2">
-                            <p className="text-xs text-muted-foreground">
-                                Task
-                            </p>
+            <CardContent className=" flex items-start justify-between gap-3 px-4 py-5 border">
+                <div className="flex items-start gap-5 ">
+                    <div className=" bg-gray-50/10 p-1.5 rounded-sm mt-2">
+                        <SquareIcon className={` size-4 ${statusStyles[data.status].className}`} />
+                    </div>
+                    <div className=" flex flex-col items-start justify-start w-full gap-2   ">
+                        <h4 className=" text-lg line-clamp-1 p-0">
+                            {data.name}
+                        </h4>
+                        {data.assignee && (
+                            <div className="flex items-start gap-2">
+                                <p className="text-xs text-muted-foreground">
+                                    Task
+                                </p>
 
-                            <p className="text-xs flex items-start gap-2 text-muted-foreground">
-                                <span className=" w-4.5 h-4.5 text-xs flex items-center justify-center text-white rounded-full bg-muted-foreground uppercase">
-                                    {data.assignee?.name?.[0]}
-                                </span>
+                                <p className="text-xs flex items-start gap-2 text-muted-foreground">
+                                    <span className=" w-4.5 h-4.5 text-xs flex items-center justify-center text-white rounded-full bg-muted-foreground uppercase">
+                                        {data.assignee?.name?.[0]}
+                                    </span>
 
-                                {data.assignee?.name}
-                            </p>
+                                    {data.assignee?.name}
+                                </p>
 
-                            <p className="text-xs text-muted-foreground">
-                                {dueDateLabel}
-                            </p>
-                        </div>
-                    )}
+                                <p className="text-xs text-muted-foreground">
+                                    {dueDateLabel}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <BadgeTaskStatus status={data.status} />
             </CardContent>
