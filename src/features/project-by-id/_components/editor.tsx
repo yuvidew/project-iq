@@ -28,7 +28,6 @@ export const Editor = ({ value, onChange, isEditable = true }: EditorProps) => {
     });
 
     return (
-        <section >
             <BlockNoteView
                 editor={editor}
                 editable={isEditable}
@@ -36,7 +35,8 @@ export const Editor = ({ value, onChange, isEditable = true }: EditorProps) => {
                 onChange={() => {
                     onChange(JSON.stringify(editor.document, null, 2));
                 }}
+                className="min-h-[200px] [&_.bn-container]:max-w-full [&_.bn-editor]:max-w-full [&_.bn-block-content]:break-words [&_.bn-inline-content]:break-words [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_table]:max-w-full [&_table]:overflow-x-auto"
+
             />
-        </section>
     )
 }

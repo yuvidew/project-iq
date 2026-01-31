@@ -12,6 +12,8 @@ import { Skeleton } from "./ui/skeleton";
 import { TaskStatus } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
 import { useAllTasksDialog } from "@/hooks/use-all-tasks";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 const SidebarMenuItems = () =>
     [1, 2, 3].map((idx) => (
@@ -67,7 +69,10 @@ export const MyTaskList = () => {
         <SidebarGroup>
             <SidebarGroupLabel>My Tasks {data?.length || 0}</SidebarGroupLabel>
             <SidebarGroupContent>
+                <ScrollArea className="h-[220px] w-full">
+
                 <SidebarMenu>
+                    
                     {isFetching ? (
                         <SidebarMenuItems />
                     ) : data?.length ? (
@@ -101,6 +106,7 @@ export const MyTaskList = () => {
 
 
                 </SidebarMenu>
+                </ScrollArea>
             </SidebarGroupContent>
         </SidebarGroup>
     );
