@@ -67,7 +67,6 @@ import { toast } from "sonner";
 import { ErrorView } from "@/components/error-view";
 import { LoadingView } from "@/components/loading-view";
 import { format } from "date-fns";
-import { useDocumentParams } from "../hooks/use-taks-params";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -87,9 +86,11 @@ interface ChatMessage {
 }
 
 const AiChatBox = ({ documentId }: { documentId?: string }) => {
+    const { mutate: onAskGemini, isPending: isAsking } = useChatWithDocument();
+
+    const [open, setOpen] = useState(false);
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const { mutate: onAskGemini, isPending: isAsking } = useChatWithDocument();
 
     const handleSendMessage = () => {
         if (!input.trim() || isAsking) return;
@@ -125,10 +126,10 @@ const AiChatBox = ({ documentId }: { documentId?: string }) => {
     };
 
     return (
-        <Popover>
+        <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button variant="outline" size={"icon-sm"}>
-                    <SparklesIcon />
+                    {open ? <SparklesIcon className="text-primary" /> : <SparklesIcon />}
                 </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="p-0 w-md">
@@ -295,14 +296,14 @@ const DocumentDetail = () => {
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
-            <SheetContent>
-                <SheetHeader>
-                    <SheetTitle className=" text-lg">
+            <SheetContent className="p-0 overflow-hidden  flex flex-col">
+                <SheetHeader className="flex-shrink-0">
+                    <SheetTitle className="text-lg">
                         {document.isEdit ? "Create New Document" : "View Document"}</SheetTitle>
                 </SheetHeader>
 
-                <ScrollArea className="flex-1 h-[calc(100vh-200px)]">
-                    <div className="flex flex-col gap-3 px-3">
+                <ScrollArea className=" min-h-0  ">
+                    <div className="flex flex-col gap-3 px-4 pb-4  ">
                         <Input
                             placeholder="Document Title"
                             className="mb-4 w-full font-semibold border-none dark:bg-transparent text-3xl! bg-transparent outline-none ring-0 focus:ring-0"
@@ -310,15 +311,15 @@ const DocumentDetail = () => {
                             readOnly={!document.isEdit}
                             onChange={(e) => setDocument({ ...document, name: e.target.value })}
                         />
-                        <Editor
-                            isEditable={document.isEdit}
-                            value={document.document}
-                            onChange={(value) => setDocument({ ...document, document: value })}
-                        />
+                            <Editor
+                                isEditable={document.isEdit}
+                                value={document.document}
+                                onChange={(value) => setDocument({ ...document, document: value })}
+                            />
                     </div>
                 </ScrollArea>
 
-                <SheetFooter className="flex flex-row justify-end ">
+                <SheetFooter className="flex-shrink-0 flex flex-row justify-end border-t">
                     {document.isEdit ? (
                         <>
                             <Button variant={"outline"} onClick={onCancel}>
@@ -349,9 +350,12 @@ const DocumentDetail = () => {
 
 interface DocumentsSearchAndCreateBtnProps {
     isCreateDoc?: boolean;
+    value? : string;
+    onSearch?: (value: string) => void;
 }
 
-export const DocumentsSearchAndCreateBtn = ({ isCreateDoc }: DocumentsSearchAndCreateBtnProps) => {
+export const DocumentsSearchAndCreateBtn = ({ 
+    isCreateDoc, value, onSearch }: DocumentsSearchAndCreateBtnProps) => {
     const { setOpen, setDocument } = useCreateDocumentDialog();
 
 
@@ -359,7 +363,11 @@ export const DocumentsSearchAndCreateBtn = ({ isCreateDoc }: DocumentsSearchAndC
 
     return (
         <div className="flex items-center justify-between">
-            <SearchBox placeholder="Search document.." />
+            <SearchBox 
+                placeholder="Search document.." 
+                value={value}
+                onChange={onSearch}
+            />
 
 
             {isCreateDoc && (
@@ -413,36 +421,34 @@ const EmptyProjectDoc = ({ isCreateDoc }: EmptyProjectDocProps) => {
     );
 };
 
-const DocumentsPagination = () => {
-    const { data, isFetching } = useGetDocuments();
+interface DocumentsPaginationProps { 
+    page : number
+    totalPages : number
+    onPageChange : (page : number) => void
+}
 
-    const [params, setParams] = useDocumentParams();
+const DocumentsPagination = ({ page, totalPages, onPageChange }: DocumentsPaginationProps) => {
 
-    if (!data) {
-        return null;
-    }
 
     return (
         <Pagination
-            disabled={isFetching}
-            page={data?.meta.page}
-            totalPages={data?.meta.totalPages}
-            onPageChange={(page) =>
-                setParams({
-                    ...params,
-                    page,
-                })
-            }
+            page={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
         />
     );
 };
 
 export const DocumentLists = () => {
     const { data: documents, isFetching, isError } = useGetDocuments();
-
+    
     const { mutate: removeDocument, isPending: isRemoving } = useRemoveDocument();
-
+    
     const { setOpen, setDocument, setIsUpdate } = useCreateDocumentDialog();
+
+    const [searchValue, setSearchValue] = useState("");
+    const [page, setPage] = useState(1);
+    const pageSize = 10;
 
     const onRemoveDoc = (docId: string) => {
         removeDocument(
@@ -455,21 +461,45 @@ export const DocumentLists = () => {
         );
     };
 
+    // Filter documents based on search value
+    const filteredDocuments = documents?.documents.filter((doc) =>
+        doc.name.toLowerCase().includes(searchValue.toLowerCase())
+    ) ?? [];
+
+    // Calculate pagination
+    const totalPages = filteredDocuments.length > 0 ? Math.ceil(filteredDocuments.length / pageSize) : 1;
+    
+    // Get paginated documents for current page
+    const paginatedDocuments = filteredDocuments.slice(
+        (page - 1) * pageSize,
+        page * pageSize
+    );
+
+    // Reset to page 1 when search changes
+    const handleSearch = (value: string) => {
+        setSearchValue(value);
+        setPage(1);
+    };
+
     return (
         <section className=" flex flex-col gap-8 pt-5">
             {/* start to search box  and create button */}
-            <DocumentsSearchAndCreateBtn isCreateDoc={documents?.canEdit} />
+            <DocumentsSearchAndCreateBtn 
+                isCreateDoc={documents?.canEdit} 
+                value={searchValue}
+                onSearch={handleSearch}
+            />
             {/* end to search box and create button */}
 
             {/* start to list  */}
             <div className=" flex flex-col gap-5">
                 {isError && <ProjectDocumentsErrorView />}
                 {isFetching && <ProjectDocumentsLoadingView />}
-                {!isFetching && documents?.documents.length === 0 && (
+                {!isFetching && filteredDocuments.length === 0 && (
                     <EmptyProjectDoc isCreateDoc={documents?.canEdit} />
                 )}
                 {!isFetching &&
-                    documents?.documents.map((doc) => (
+                    paginatedDocuments.map((doc) => (
                         <Card
                             key={doc.id}
                             className={
@@ -531,7 +561,7 @@ export const DocumentLists = () => {
             {/* end to list  */}
 
             {/* start to pagination */}
-            <DocumentsPagination />
+            <DocumentsPagination page={page} totalPages={totalPages} onPageChange={setPage} />
             {/* end to pagination */}
 
             <DocumentDetail />

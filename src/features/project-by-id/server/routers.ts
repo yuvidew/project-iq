@@ -18,12 +18,19 @@ export const taskRouter = router({
                 projectId: z.string(),
                 assigneeId: z.string(),
                 dueDate: z.date().optional(),
-                position: z.number()
-            })
+                position: z.number(),
+            }),
         )
         .mutation(async ({ input }) => {
-            const { name, description, status, projectId, assigneeId, dueDate, position } =
-                input;
+            const {
+                name,
+                description,
+                status,
+                projectId,
+                assigneeId,
+                dueDate,
+                position,
+            } = input;
 
             const project = await prisma.project.findUnique({
                 where: { id: projectId },
@@ -71,7 +78,7 @@ export const taskRouter = router({
                 search: z.string().default(""),
                 status: z.nativeEnum(TaskStatus).optional(),
                 assigneeId: z.string().default(""),
-            })
+            }),
         )
         .query(async ({ input }) => {
             const { page, pageSize, search, status, assigneeId, projectId } = input;
@@ -86,7 +93,12 @@ export const taskRouter = router({
                 ...(searchTerm && {
                     OR: [
                         { name: { contains: searchTerm, mode: "insensitive" as const } },
-                        { description: { contains: searchTerm, mode: "insensitive" as const } },
+                        {
+                            description: {
+                                contains: searchTerm,
+                                mode: "insensitive" as const,
+                            },
+                        },
                     ],
                 }),
                 ...(assigneeIdTerm && { assigneeId: assigneeIdTerm }),
@@ -143,7 +155,6 @@ export const taskRouter = router({
                 }),
             ]);
 
-
             return {
                 tasks,
                 meta: {
@@ -151,7 +162,7 @@ export const taskRouter = router({
                     pageSize,
                     total,
                     totalPages: Math.ceil(total / pageSize),
-                }
+                },
             };
         }),
 
@@ -159,8 +170,9 @@ export const taskRouter = router({
         .input(
             z.object({
                 organizationSlug: z.string(),
-            })
-        ).query(async ({ input, ctx }) => {
+            }),
+        )
+        .query(async ({ input, ctx }) => {
             const userId = ctx.auth.user.id;
             const { organizationSlug: slug } = input;
 
@@ -180,20 +192,20 @@ export const taskRouter = router({
                 where: {
                     assigneeId: userId,
                     project: {
-                        organizationSlug: slug
+                        organizationSlug: slug,
                     },
                 },
             });
-
         }),
 
     getOne: protectedProcedure
-        .input(z.object({
-            projectId: z.string(),
-            taskId: z.string(),
-        }))
+        .input(
+            z.object({
+                projectId: z.string(),
+                taskId: z.string(),
+            }),
+        )
         .query(async ({ input }) => {
-
             const { projectId, taskId } = input;
 
             const [task] = await Promise.all([
@@ -224,18 +236,15 @@ export const taskRouter = router({
                             },
                         },
                     },
-
                 }),
-
-            ])
-
+            ]);
 
             if (!task) {
                 throw new TRPCError({
                     code: "NOT_FOUND",
                     message: "Tasks not found",
                 });
-            };
+            }
 
             await updateProjectStatus(projectId);
 
@@ -251,18 +260,11 @@ export const taskRouter = router({
                 projectId: z.string(),
                 assigneeId: z.string(),
                 dueDate: z.date().optional(),
-            })
+            }),
         )
         .mutation(async ({ input }) => {
-            const {
-                id,
-                name,
-                description,
-                status,
-                projectId,
-                assigneeId,
-                dueDate
-            } = input;
+            const { id, name, description, status, projectId, assigneeId, dueDate } =
+                input;
 
             const existingTask = await prisma.task.findUnique({
                 where: { id },
@@ -322,7 +324,7 @@ export const taskRouter = router({
         .input(
             z.object({
                 id: z.string(),
-            })
+            }),
         )
         .mutation(async ({ input }) => {
             const { id } = input;
@@ -335,18 +337,18 @@ export const taskRouter = router({
                     code: "NOT_FOUND",
                     message: "Task not found",
                 });
-            };
+            }
 
             return prisma.$transaction(async (tx) => {
                 await tx.taskMember.deleteMany({
                     where: {
-                        taskId: id
-                    }
+                        taskId: id,
+                    },
                 });
 
                 await updateProjectStatus(task.projectId);
 
-                return tx.task.delete({ where: { id } })
+                return tx.task.delete({ where: { id } });
             });
         }),
 
@@ -354,7 +356,7 @@ export const taskRouter = router({
         .input(
             z.object({
                 projectId: z.string(),
-            })
+            }),
         )
         .query(async ({ input }) => {
             const { projectId } = input;
@@ -387,7 +389,7 @@ export const taskRouter = router({
                     [TaskStatus.TODO]: 0,
                     [TaskStatus.IN_PROGRESS]: 0,
                     [TaskStatus.DONE]: 0,
-                }
+                },
             );
 
             const total =
@@ -405,21 +407,23 @@ export const taskRouter = router({
                 inReview: countsByStatus[TaskStatus.IN_REVIEW],
                 todo: countsByStatus[TaskStatus.TODO],
                 teamMembers,
-                project
+                project,
             };
         }),
 
     changePosition: protectedProcedure
         .input(
             z.object({
-                updates: z.array(
-                    z.object({
-                        position: z.number(),
-                        id: z.string(),
-                        status: z.nativeEnum(TaskStatus),
-                    })
-                ).min(1, "No updates provided"),
-            })
+                updates: z
+                    .array(
+                        z.object({
+                            position: z.number(),
+                            id: z.string(),
+                            status: z.nativeEnum(TaskStatus),
+                        }),
+                    )
+                    .min(1, "No updates provided"),
+            }),
         )
         .mutation(async ({ input }) => {
             const { updates } = input;
@@ -481,11 +485,11 @@ export const taskRouter = router({
                 {
                     maxWait: 10000,
                     timeout: 30000,
-                }
+                },
             );
 
             const projectIds = Array.from(
-                new Set(updatedTasks.map((task) => task.projectId))
+                new Set(updatedTasks.map((task) => task.projectId)),
             );
 
             await Promise.all(projectIds.map(updateProjectStatus));
@@ -496,7 +500,7 @@ export const taskRouter = router({
         .input(
             z.object({
                 taskIds: z.array(z.string()).min(1, "No task ids provided"),
-            })
+            }),
         )
         .mutation(async ({ input }) => {
             const { taskIds } = input;
@@ -531,60 +535,42 @@ export const taskRouter = router({
                 projectId: z.string(),
                 name: z.string(),
                 document: z.string(),
-            })
+            }),
         )
         .mutation(async ({ input }) => {
             const { projectId, name, document } = input;
 
             const projectExisting = await prisma.project.findUnique({
-                where: { id: projectId }
+                where: { id: projectId },
             });
 
             if (!projectExisting) {
                 throw new TRPCError({
                     code: "NOT_FOUND",
-                    message: "Project not found"
+                    message: "Project not found",
                 });
             }
 
-            return await prisma.projectDocument.create(
-                {
-                    data: {
-                        name,
-                        document,
-                        project: { connect: { id: projectId } }
-                    }
-                }
-            )
+            return await prisma.projectDocument.create({
+                data: {
+                    name,
+                    document,
+                    project: { connect: { id: projectId } },
+                },
+            });
         }),
     getDocuments: protectedProcedure
         .input(
             z.object({
                 projectId: z.string(),
-                page: z.number().default(PAGINATION.DEFAULT_PAGE),
-                pageSize: z
-                    .number()
-                    .min(PAGINATION.MIN_PAGE_SIZE)
-                    .max(PAGINATION.MAX_PAGE_SIZE)
-                    .default(PAGINATION.DEFAULT_PAGE_SIZE),
-                search: z.string().default(""),
-            })
+            }),
         )
         .query(async ({ input, ctx }) => {
             const userId = ctx.auth.user.id;
-            const { projectId, page, pageSize, search } = input;
-
-            const skip = (page - 1) * pageSize;
-
-            const searchTerm = search.trim();
+            const { projectId } = input;
 
             const where: Prisma.ProjectDocumentWhereInput = {
                 projectId,
-                ...(searchTerm && {
-                    OR: [
-                        { name: { contains: searchTerm, mode: "insensitive" as const } },
-                    ],
-                }),
             };
 
             const projectExisting = await prisma.project.findUnique({
@@ -592,44 +578,42 @@ export const taskRouter = router({
                 select: {
                     id: true,
                     organizationSlug: true,
-                }
+                },
             });
 
             if (!projectExisting) {
                 throw new TRPCError({
                     code: "NOT_FOUND",
-                    message: "Project not found"
+                    message: "Project not found",
                 });
-            };
+            }
 
             // Check user's role in organization and project
-            const [total, documents, organizationMember, projectMember] = await Promise.all([
-                prisma.projectDocument.count({ where }),
-                prisma.projectDocument.findMany({
-                    where,
-                    orderBy: { createdAt: "desc" },
-                    skip,
-                    take: pageSize,
-                }),
-                prisma.organizationMember.findUnique({
-                    where: {
-                        userId_organizationSlug: {
-                            userId,
-                            organizationSlug: projectExisting.organizationSlug,
+            const [documents, organizationMember, projectMember] =
+                await Promise.all([
+                    prisma.projectDocument.findMany({
+                        where,
+                        orderBy: { createdAt: "desc" },
+                    }),
+                    prisma.organizationMember.findUnique({
+                        where: {
+                            userId_organizationSlug: {
+                                userId,
+                                organizationSlug: projectExisting.organizationSlug,
+                            },
                         },
-                    },
-                    select: { role: true },
-                }),
-                prisma.projectMember.findUnique({
-                    where: {
-                        projectId_userId: {
-                            projectId,
-                            userId,
+                        select: { role: true },
+                    }),
+                    prisma.projectMember.findUnique({
+                        where: {
+                            projectId_userId: {
+                                projectId,
+                                userId,
+                            },
                         },
-                    },
-                    select: { role: true },
-                }),
-            ]);
+                        select: { role: true },
+                    }),
+                ]);
 
             // User can edit if they are OWNER or ADMIN in organization, or LEAD in project
             const canEdit =
@@ -645,15 +629,8 @@ export const taskRouter = router({
             return {
                 documents: documentsWithEditFlag,
                 canEdit,
-                meta: {
-                    page,
-                    pageSize,
-                    total,
-                    totalPages: Math.ceil(total / pageSize),
-                }
             };
-        }
-        ),
+        }),
 
     updateDocument: protectedProcedure
         .input(
@@ -661,7 +638,7 @@ export const taskRouter = router({
                 id: z.string(),
                 name: z.string(),
                 document: z.string(),
-            })
+            }),
         )
         .mutation(async ({ input, ctx }) => {
             const userId = ctx.auth.user.id;
@@ -671,15 +648,15 @@ export const taskRouter = router({
                 where: { id },
                 include: {
                     project: {
-                        select: { organizationSlug: true }
-                    }
-                }
+                        select: { organizationSlug: true },
+                    },
+                },
             });
 
             if (!existingDoc) {
                 throw new TRPCError({
                     code: "NOT_FOUND",
-                    message: "Document not found"
+                    message: "Document not found",
                 });
             }
 
@@ -714,26 +691,24 @@ export const taskRouter = router({
             if (!canEdit) {
                 throw new TRPCError({
                     code: "FORBIDDEN",
-                    message: "You don't have permission to edit this document"
+                    message: "You don't have permission to edit this document",
                 });
             }
 
-            return await prisma.projectDocument.update(
-                {
-                    where: { id },
-                    data: {
-                        name,
-                        document,
-                    }
-                }
-            );
+            return await prisma.projectDocument.update({
+                where: { id },
+                data: {
+                    name,
+                    document,
+                },
+            });
         }),
 
     removeDocument: protectedProcedure
         .input(
             z.object({
                 id: z.string(),
-            })
+            }),
         )
         .mutation(async ({ input, ctx }) => {
             const userId = ctx.auth.user.id;
@@ -743,15 +718,15 @@ export const taskRouter = router({
                 where: { id },
                 include: {
                     project: {
-                        select: { organizationSlug: true }
-                    }
-                }
+                        select: { organizationSlug: true },
+                    },
+                },
             });
 
             if (!existingDoc) {
                 throw new TRPCError({
                     code: "NOT_FOUND",
-                    message: "Document not found"
+                    message: "Document not found",
                 });
             }
 
@@ -786,15 +761,13 @@ export const taskRouter = router({
             if (!canEdit) {
                 throw new TRPCError({
                     code: "FORBIDDEN",
-                    message: "You don't have permission to delete this document"
+                    message: "You don't have permission to delete this document",
                 });
             }
 
-            return await prisma.projectDocument.delete(
-                {
-                    where: { id }
-                }
-            );
+            return await prisma.projectDocument.delete({
+                where: { id },
+            });
         }),
 
     chatWithDocument: protectedProcedure
@@ -802,7 +775,7 @@ export const taskRouter = router({
             z.object({
                 id: z.string(),
                 question: z.string().min(5),
-            })
+            }),
         )
         .mutation(async ({ input }) => {
             const { id, question } = input;
@@ -810,69 +783,77 @@ export const taskRouter = router({
                 where: { id },
                 include: {
                     project: {
-                        select: { organizationSlug: true }
-                    }
-                }
+                        select: { organizationSlug: true },
+                    },
+                },
             });
 
             if (!existingDoc) {
                 throw new TRPCError({
                     code: "NOT_FOUND",
-                    message: "Document not found"
+                    message: "Document not found",
                 });
             }
 
             // Extract plain text from the document JSON (TipTap/ProseMirror format)
             const extractTextFromDocument = (docJson: string): string => {
-    try {
-        const doc = JSON.parse(docJson);
+                try {
+                    const doc = JSON.parse(docJson);
 
-        interface DocumentNode {
-            type?: string;
-            text?: string;
-            content?: DocumentNode[];
-        }
+                    interface DocumentNode {
+                        type?: string;
+                        text?: string;
+                        content?: DocumentNode[];
+                    }
 
-        const extractText = (node: DocumentNode): string => {
-            if (node.type === 'text' && node.text) {
-                return node.text;
-            }
-            if (node.content && Array.isArray(node.content)) {
-                const childText = node.content.map(extractText).join('');
-                if (['paragraph', 'heading', 'listItem', 'bulletList', 'orderedList', 'numberedListItem'].includes(node.type || '')) {
-                    return childText + '\n';
+                    const extractText = (node: DocumentNode): string => {
+                        if (node.type === "text" && node.text) {
+                            return node.text;
+                        }
+                        if (node.content && Array.isArray(node.content)) {
+                            const childText = node.content.map(extractText).join("");
+                            if (
+                                [
+                                    "paragraph",
+                                    "heading",
+                                    "listItem",
+                                    "bulletList",
+                                    "orderedList",
+                                    "numberedListItem",
+                                ].includes(node.type || "")
+                            ) {
+                                return childText + "\n";
+                            }
+                            return childText;
+                        }
+                        return "";
+                    };
+
+                    if (Array.isArray(doc)) {
+                        return doc.map(extractText).join("\n").trim();
+                    } else {
+                        return extractText(doc as DocumentNode).trim();
+                    }
+                } catch {
+                    return docJson;
                 }
-                return childText;
-            }
-            return '';
-        };
-
-        if (Array.isArray(doc)) {
-            return doc.map(extractText).join('\n').trim();
-        } else {
-            return extractText(doc as DocumentNode).trim();
-        }
-    } catch {
-        return docJson;
-    }
-};
+            };
 
             const documentText = extractTextFromDocument(existingDoc.document);
-
 
             // Build prompt with document context
             const prompt = `You are a helpful assistant for a project management application. Use the following document content as context to answer the user's question. If the answer cannot be found in the document, say so politely.
 
-Document Title: ${existingDoc.name}
+            Document Title: ${existingDoc.name}
 
-Document Content:
-${documentText}
+            Document Content:
+            ${documentText}
 
-User Question: ${question}
+            User Question: ${question}
 
-Please provide a clear, concise, and helpful answer based on the document content:`;
+            Please provide a clear, concise, and helpful answer based on the document content:`;
 
-            const model = google('gemini-2.5-flash');
+            const model = google("gemini-2.5-flash");
 
             const { text } = await generateText({
                 model,
