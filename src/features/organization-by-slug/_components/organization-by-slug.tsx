@@ -362,7 +362,7 @@ export const OrganizationBySlug = () => {
                 {/* start to create new project section  */}
                 <section className=' flex items-start justify-between'>
                     <div className='flex flex-col gap-2'>
-                        <h1 className=' text-3xl font-semibold'>Welcome back, <span className=' text-primary'>yuvi</span></h1>
+                        <h1 className=' text-3xl font-semibold'>Welcome back</h1>
                         <p className=' text-sm text-muted-foreground'>Here's what's happening with your projects today</p>
                     </div>
 
