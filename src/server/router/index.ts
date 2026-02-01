@@ -10,6 +10,7 @@ import { taskRouter } from "@/features/project-by-id/server/routers";
 import { organizationBySlugRouter } from "@/features/organization-by-slug/server/routers";
 import { teamsRouter } from "@/features/teams/server/routers";
 import { inviteRouter } from "@/features/invite/server/routers";
+import { settingRouter } from "@/features/setting/server/routers";
 
 export const appRouter = router({
     image: imageRouter,
@@ -21,6 +22,7 @@ export const appRouter = router({
     task : taskRouter,
     teams : teamsRouter,
     invite : inviteRouter,
+    setting : settingRouter,
     
 });
 

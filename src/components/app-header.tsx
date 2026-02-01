@@ -1,7 +1,6 @@
 
 import { headers } from 'next/headers';
-import { SidebarTrigger } from './ui/sidebar'
-import { SearchWithDropdown } from './search-with-dropdown';
+import { SidebarTrigger } from './ui/sidebar';
 import { UserInfo } from './user-info';
 import { NotificationRoomProvider } from '@/liveblocks/notification-room-provider';
 import { NotificationListener } from '@/liveblocks/notification-listener';
@@ -20,7 +19,7 @@ export const AppHeader = async () => {
 
             <div className=' flex items-center gap-4'>
                 <SidebarTrigger />
-                <SearchWithDropdown isLoading = {false} list={[]} />
+                {/* <SearchWithDropdown isLoading = {false} list={[]} /> */}
             </div>
 
             <div className='flex items-center justify-end gap-3'>

@@ -53,6 +53,10 @@ export const useUpdateOrganization = () => {
                 queryClient.invalidateQueries(
                     trpc.organization.getOrganizationBySlug.queryFilter(data.slug),
                 );
+
+                queryClient.invalidateQueries(
+                    trpc.setting.getOrgBySlug.queryOptions({slug : data.slug})
+                );
             },
             onError: (data) => toast.error(data.message)
         })

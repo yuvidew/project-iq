@@ -43,7 +43,6 @@ export const SignUpForm = ({
     const token = searchParams.get("token");
     const organization = searchParams.get("organization");
 
-    console.log("token and organization", token, organization);
     
     const [isEyeOpen, setIsEyeOpen] = useState(false);
     const form = useForm<z.infer<typeof SignUpSchema>>({

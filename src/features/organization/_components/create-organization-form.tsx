@@ -31,15 +31,9 @@ import { useUploadImage } from "@/features/image/hooks/use-upload-image-hook";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { useCreateOrganization, useUpdateOrganization } from "../hooks/use-organization";
+import { OrganizationFormSchema, OrganizationFormValue } from "@/form-schema";
 
-const OrganizationFormSchema = z.object({
-    name: z.string().min(2, { message: "Organization name must be at least 2 characters." }).max(100, { message: "Organization name must be at most 100 characters." }),
-    description: z.string().max(500, { message: "Description must be at most 500 characters." }).optional(),
-    slug: z.string().min(2, { message: "Slug must be at least 2 characters." }).max(50, { message: "Slug must be at most 50 characters." }),
-    logoUrl: z.string().url().optional(),
-});
 
-type OrganizationFormValue = z.infer<typeof OrganizationFormSchema>;
 
 interface Props {
     open: boolean;
