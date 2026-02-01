@@ -21,17 +21,16 @@ export const baseProcedure = t.procedure;
 
 export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
     // Prefer the request headers from the current tRPC call so cookies are preserved
-    const session = await auth.api
-        .getSession({
+    let session = null;
+    
+    try {
+        session = await auth.api.getSession({
             headers: ctx.req.headers,
-        })
-        .catch((err) => {
-            console.error("getSession failed", err);
-            throw new TRPCError({
-                code: "UNAUTHORIZED",
-                message: "Failed to get session",
-            });
         });
+    } catch (err) {
+        console.error("getSession failed", err);
+        // Session retrieval failed, session remains null
+    }
 
     if (!session) {
         throw new TRPCError({
