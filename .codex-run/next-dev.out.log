@@ -1,0 +1,11 @@
+▲ Next.js 16.1.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.4:3000
+- Environments: .env
+
+✓ Starting...
+Creating turbopack project {
+  dir: 'E:\\Ai.Project(MERN + React native + Next js)\\project.iq',
+  testMode: true
+}
+✓ Ready in 9.1s

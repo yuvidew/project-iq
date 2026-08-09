@@ -1,356 +1,402 @@
-"use client"
+"use client";
 
-import { useTRPC } from "@/trpc/trpc-client-provider";
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
+import { useTRPC } from "@/trpc/trpc-client-provider";
 import { useTaskParams } from "./use-taks-params";
 
 // Hook to create task
 export const useCreateTask = () => {
-    const queryClient = useQueryClient();
-    const trpc = useTRPC();
-    const { id, slug } = useParams<{ id?: string; slug?: string }>();
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
 
+  if (!slug) {
+    throw new Error("Organization slug is required to load organization.");
+  }
 
-    if (!slug) {
-        throw new Error("Organization slug is required to load organization.");
-    };
+  return useMutation(
+    trpc.task.create.mutationOptions({
+      onSuccess: (data) => {
+        toast.success("Task created successfully");
 
-    return useMutation(
-        trpc.task.create.mutationOptions({
-            onSuccess: (data) => {
-                toast.success("Task created successfully");
+        const projectId = id ?? data.projectId?.[0];
+        if (projectId) {
+          queryClient.invalidateQueries(
+            trpc.task.getMany.queryOptions({ projectId }),
+          );
 
-                const projectId = id ?? data.projectId?.[0];
-                if (projectId) {
-                    queryClient.invalidateQueries(
-                        trpc.task.getMany.queryOptions({ projectId })
-                    );
+          queryClient.invalidateQueries(
+            trpc.task.getProjectPerformance.queryOptions({ projectId }),
+          );
 
-                    queryClient.invalidateQueries(
-                        trpc.task.getProjectPerformance.queryOptions({ projectId })
-                    );
+          queryClient.invalidateQueries(
+            trpc.task.getMyTasks.queryOptions({
+              organizationSlug: slug,
+            }),
+          );
+        }
+      },
 
-                    queryClient.invalidateQueries(
-                        trpc.task.getMyTasks.queryOptions({
-                            organizationSlug: slug
-                        }),
-                    );
-                }
-            },
-
-            onError: (data) => {
-                console.log("Task Creation Error:", data.message);
-                toast.error(data.message);
-            },
-        }),
-    );
+      onError: (data) => {
+        console.log("Task Creation Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
 };
 
+export const useCreateManyTasks = () => {
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
+
+  if (!slug) {
+    throw new Error("Organization slug is required to load organization.");
+  }
+
+  return useMutation(
+    trpc.task.createMany.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(`${data.createdCount} tasks imported`);
+
+        const projectId = id ?? data.projectId;
+        if (projectId) {
+          queryClient.invalidateQueries(
+            trpc.task.getMany.queryOptions({ projectId }),
+          );
+
+          queryClient.invalidateQueries(
+            trpc.task.getProjectPerformance.queryOptions({ projectId }),
+          );
+
+          queryClient.invalidateQueries(
+            trpc.task.getMyTasks.queryOptions({
+              organizationSlug: slug,
+            }),
+          );
+        }
+      },
+      onError: (data) => {
+        console.log("Task import Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
+};
+
+export const useExtractTasksFromImage = () => {
+  const trpc = useTRPC();
+
+  return useMutation(
+    trpc.task.extractTasksFromImage.mutationOptions({
+      onError: (data) => {
+        console.log("Task image extraction Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
+};
 
 // Hook to get task
 export const useSuspenseTasks = () => {
-    const trpc = useTRPC();
-    const [params] = useTaskParams();
-    const { id } = useParams<{ id?: string }>();
+  const trpc = useTRPC();
+  const [params] = useTaskParams();
+  const { id } = useParams<{ id?: string }>();
 
-    if (!id) {
-        throw new Error("Project id is required to load projects.");
-    };
+  if (!id) {
+    throw new Error("Project id is required to load projects.");
+  }
 
-    const queryInput = {
-        ...params,
-        status: params.status ?? undefined,
-        assigneeId: params.assigneeId ?? undefined,
-        projectId: id,
-    };
+  const queryInput = {
+    ...params,
+    status: params.status ?? undefined,
+    assigneeId: params.assigneeId ?? undefined,
+    projectId: id,
+  };
 
-    return useSuspenseQuery(
-        trpc.task.getMany.queryOptions(queryInput)
-    );
+  return useSuspenseQuery(trpc.task.getMany.queryOptions(queryInput));
 };
-
 
 // Hook to update project
 export const useUpdateTask = () => {
-    const queryClient = useQueryClient();
-    const trpc = useTRPC();
-    const { id, slug } = useParams<{ id?: string; slug?: string }>();
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
 
+  if (!slug) {
+    throw new Error("Organization slug is required to load organization.");
+  }
 
-    if (!slug) {
-        throw new Error("Organization slug is required to load organization.");
-    };
+  return useMutation(
+    trpc.task.update.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(`Task "${data.name}" saved`);
 
-    return useMutation(
-        trpc.task.update.mutationOptions({
-            onSuccess: (data) => {
-                toast.success(`Task "${data.name}" saved`);
+        const projectId = id ?? data.projectId?.[0];
+        if (projectId) {
+          queryClient.invalidateQueries(
+            trpc.task.getMany.queryOptions({ projectId }),
+          );
 
-                const projectId = id ?? data.projectId?.[0];
-                if (projectId) {
-                    queryClient.invalidateQueries(
-                        trpc.task.getMany.queryOptions({ projectId })
-                    );
+          queryClient.invalidateQueries(
+            trpc.task.getProjectPerformance.queryOptions({ projectId }),
+          );
 
-                    queryClient.invalidateQueries(
-                        trpc.task.getProjectPerformance.queryOptions({ projectId })
-                    );
+          queryClient.invalidateQueries(
+            trpc.task.getMyTasks.queryOptions({
+              organizationSlug: slug,
+            }),
+          );
+        }
+      },
 
-                    queryClient.invalidateQueries(
-                        trpc.task.getMyTasks.queryOptions({
-                            organizationSlug: slug
-                        }),
-                    );
-                }
-            },
-
-            onError: (data) => {
-                console.log("Task update Error:", data.message);
-                toast.error(data.message);
-            },
-        }),
-    );
+      onError: (data) => {
+        console.log("Task update Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
 };
 
 // Hook to remove task
 export const useRemoveTask = () => {
-    const queryClient = useQueryClient();
-    const trpc = useTRPC();
-    const { id, slug } = useParams<{ id?: string; slug?: string }>();
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
 
+  if (!slug) {
+    throw new Error("Organization slug is required to load organization.");
+  }
 
-    if (!slug) {
-        throw new Error("Organization slug is required to load organization.");
-    };
+  return useMutation(
+    trpc.task.remove.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(`task "${data.name}" removed`);
 
-    return useMutation(
-        trpc.task.remove.mutationOptions({
-            onSuccess: (data) => {
-                toast.success(`task "${data.name}" removed`);
+        const projectId = data.projectId ?? id;
+        if (projectId) {
+          queryClient.invalidateQueries(
+            trpc.task.getMany.queryOptions({ projectId }),
+          );
 
-                const projectId = data.projectId ?? id;
-                if (projectId) {
-                    queryClient.invalidateQueries(
-                        trpc.task.getMany.queryOptions({ projectId })
-                    );
+          queryClient.invalidateQueries(
+            trpc.task.getProjectPerformance.queryOptions({ projectId }),
+          );
 
-                    queryClient.invalidateQueries(
-                        trpc.task.getProjectPerformance.queryOptions({ projectId })
-                    );
+          queryClient.invalidateQueries(
+            trpc.task.getMyTasks.queryOptions({
+              organizationSlug: slug,
+            }),
+          );
+        }
 
-                    queryClient.invalidateQueries(
-                        trpc.task.getMyTasks.queryOptions({
-                            organizationSlug: slug
-                        }),
-                    );
-                }
-
-                // TODO: also call getOne
-            },
-            onError: (data) => {
-                console.log("Task remove Error:", data.message);
-                toast.error(data.message);
-            },
-        })
-    )
-}
+        // TODO: also call getOne
+      },
+      onError: (data) => {
+        console.log("Task remove Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
+};
 
 // Hook to update task position
 export const useChangeTaskPositionStatus = () => {
-    const queryClient = useQueryClient();
-    const trpc = useTRPC();
-    const { id, slug } = useParams<{ id?: string; slug?: string }>();
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
 
+  if (!slug) {
+    throw new Error("Organization slug is required to load organization.");
+  }
 
-    if (!slug) {
-        throw new Error("Organization slug is required to load organization.");
-    };
+  return useMutation(
+    trpc.task.changePosition.mutationOptions({
+      onSuccess: (data) => {
+        toast.success("Tasks reordered");
 
-    return useMutation(
-        trpc.task.changePosition.mutationOptions({
-            onSuccess: (data) => {
-                toast.success("Tasks reordered");
+        const projectId = id ?? data.projectIds?.[0];
+        if (projectId) {
+          queryClient.invalidateQueries(
+            trpc.task.getMany.queryOptions({ projectId }),
+          );
 
-                const projectId = id ?? data.projectIds?.[0];
-                if (projectId) {
-                    queryClient.invalidateQueries(
-                        trpc.task.getMany.queryOptions({ projectId })
-                    );
+          queryClient.invalidateQueries(
+            trpc.task.getProjectPerformance.queryOptions({ projectId }),
+          );
 
-                    queryClient.invalidateQueries(
-                        trpc.task.getProjectPerformance.queryOptions({ projectId })
-                    );
-
-                    queryClient.invalidateQueries(
-                        trpc.task.getMyTasks.queryOptions({
-                            organizationSlug: slug
-                        }),
-                    );
-                }
-            },
-            onError: (data) => {
-                console.log("Task moved Error:", data.message);
-                toast.error(data.message);
-            },
-        })
-    )
-}
+          queryClient.invalidateQueries(
+            trpc.task.getMyTasks.queryOptions({
+              organizationSlug: slug,
+            }),
+          );
+        }
+      },
+      onError: (data) => {
+        console.log("Task moved Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
+};
 
 // Hook to remove all task
 export const useRemoveAllTasks = () => {
-    const queryClient = useQueryClient();
-    const trpc = useTRPC();
-    const { id, slug } = useParams<{ id?: string; slug?: string }>();
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
 
+  if (!slug) {
+    throw new Error("Organization slug is required to load organization.");
+  }
 
-    if (!slug) {
-        throw new Error("Organization slug is required to load organization.");
-    };
+  return useMutation(
+    trpc.task.removeAll.mutationOptions({
+      onSuccess: () => {
+        toast.success("Tasks  removed");
 
-    return useMutation(
-        trpc.task.removeAll.mutationOptions({
-            onSuccess: () => {
-                toast.success("Tasks  removed");
+        const projectId = id;
+        if (projectId) {
+          queryClient.invalidateQueries(
+            trpc.task.getMany.queryOptions({ projectId }),
+          );
 
-                const projectId = id;
-                if (projectId) {
-                    queryClient.invalidateQueries(
-                        trpc.task.getMany.queryOptions({ projectId })
-                    );
+          queryClient.invalidateQueries(
+            trpc.task.getProjectPerformance.queryOptions({ projectId }),
+          );
 
-                    queryClient.invalidateQueries(
-                        trpc.task.getProjectPerformance.queryOptions({ projectId })
-                    );
-
-                    queryClient.invalidateQueries(
-                        trpc.task.getMyTasks.queryOptions({
-                            organizationSlug: slug
-                        }),
-                    );
-                }
-            },
-            onError: (data) => {
-                console.log("Task moved Error:", data.message);
-                toast.error(data.message);
-            },
-        }),
-    );
+          queryClient.invalidateQueries(
+            trpc.task.getMyTasks.queryOptions({
+              organizationSlug: slug,
+            }),
+          );
+        }
+      },
+      onError: (data) => {
+        console.log("Task moved Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
 };
 
 // Hook to get my tasks
 export const useGetMyTasks = () => {
-    const trpc = useTRPC();
-    const { slug } = useParams<{ slug?: string }>();
+  const trpc = useTRPC();
+  const { slug } = useParams<{ slug?: string }>();
 
-    if (!slug) {
-        throw new Error("Organization slug is required to load organization.");
-    };
+  if (!slug) {
+    throw new Error("Organization slug is required to load organization.");
+  }
 
-    return useQuery(
-        trpc.task.getMyTasks.queryOptions({
-            organizationSlug: slug
-        }),
-    );
+  return useQuery(
+    trpc.task.getMyTasks.queryOptions({
+      organizationSlug: slug,
+    }),
+  );
 };
 
-// Hook to create Document 
+// Hook to create Document
 export const useCreateDocument = () => {
-    const queryClient = useQueryClient();
-    const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
 
-    const { id } = useParams<{ id?: string }>();
+  const { id } = useParams<{ id?: string }>();
 
-    return useMutation(
-        trpc.task.createDocument.mutationOptions({
-            onSuccess: (data) => {
-                toast.success("Document created successfully");
-                const projectId = id ?? data.projectId;
-                if (projectId) {
-                    queryClient.invalidateQueries(
-                        trpc.task.getDocuments.queryOptions({ projectId })
-                    );
-                }
-            },
-            onError: (data) => {
-                console.log("Document creation Error:", data.message);
-                toast.error(data.message);
-            },
-        })
-    );
+  return useMutation(
+    trpc.task.createDocument.mutationOptions({
+      onSuccess: (data) => {
+        toast.success("Document created successfully");
+        const projectId = id ?? data.projectId;
+        if (projectId) {
+          queryClient.invalidateQueries(
+            trpc.task.getDocuments.queryOptions({ projectId }),
+          );
+        }
+      },
+      onError: (data) => {
+        console.log("Document creation Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
 };
 
 // Hook to update Document
 export const useUpdateDocument = () => {
-    const queryClient = useQueryClient();
-    const trpc = useTRPC();
-    const { id } = useParams<{ id?: string }>();
-    return useMutation(
-        trpc.task.updateDocument.mutationOptions({
-            onSuccess: (data) => {
-                toast.success("Document updated successfully");
-                const projectId = id ?? data.projectId;
-                if (projectId) {
-                    queryClient.invalidateQueries(
-                        trpc.task.getDocuments.queryOptions({ projectId })
-                    );
-                }
-            },
-            onError: (data) => {
-                console.log("Document update Error:", data.message);
-                toast.error(data.message);
-            },
-        })
-    );
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  const { id } = useParams<{ id?: string }>();
+  return useMutation(
+    trpc.task.updateDocument.mutationOptions({
+      onSuccess: (data) => {
+        toast.success("Document updated successfully");
+        const projectId = id ?? data.projectId;
+        if (projectId) {
+          queryClient.invalidateQueries(
+            trpc.task.getDocuments.queryOptions({ projectId }),
+          );
+        }
+      },
+      onError: (data) => {
+        console.log("Document update Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
 };
 
 // Hook to get Documents
 export const useGetDocuments = () => {
-    const trpc = useTRPC();
-    const { id } = useParams<{ id?: string }>();
+  const trpc = useTRPC();
+  const { id } = useParams<{ id?: string }>();
 
-    if (!id) {
-        throw new Error("Project id is required to load projects.");
-    }
-    return useQuery(
-        trpc.task.getDocuments.queryOptions({ projectId: id })
-    );
+  if (!id) {
+    throw new Error("Project id is required to load projects.");
+  }
+  return useQuery(trpc.task.getDocuments.queryOptions({ projectId: id }));
 };
 
 // Hook to remove Document
 export const useRemoveDocument = () => {
-    const queryClient = useQueryClient();
-    const trpc = useTRPC();
-    const { id } = useParams<{ id?: string }>();
-    return useMutation(
-        trpc.task.removeDocument.mutationOptions({
-            onSuccess: (data) => {
-                toast.success("Document removed successfully");
-                const projectId = id ?? data.projectId;
-                if (projectId) {
-                    queryClient.invalidateQueries(
-                        trpc.task.getDocuments.queryOptions({ projectId })
-                    );
-                }
-            },
-            onError: (data) => {
-                console.log("Document remove Error:", data.message);
-                toast.error(data.message);
-            },
-        })
-    );
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  const { id } = useParams<{ id?: string }>();
+  return useMutation(
+    trpc.task.removeDocument.mutationOptions({
+      onSuccess: (data) => {
+        toast.success("Document removed successfully");
+        const projectId = id ?? data.projectId;
+        if (projectId) {
+          queryClient.invalidateQueries(
+            trpc.task.getDocuments.queryOptions({ projectId }),
+          );
+        }
+      },
+      onError: (data) => {
+        console.log("Document remove Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
 };
 
 // Hook to chat with ai related to document by id
 export const useChatWithDocument = () => {
-    const trpc = useTRPC();
-    return useMutation(
-        trpc.task.chatWithDocument.mutationOptions({
-            onError: (data) => {
-                console.log("Chat with document Error:", data.message);
-                toast.error(data.message);
-            },
-        })
-    );
-}
+  const trpc = useTRPC();
+  return useMutation(
+    trpc.task.chatWithDocument.mutationOptions({
+      onError: (data) => {
+        console.log("Chat with document Error:", data.message);
+        toast.error(data.message);
+      },
+    }),
+  );
+};
