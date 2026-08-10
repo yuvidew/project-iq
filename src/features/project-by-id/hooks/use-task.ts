@@ -255,6 +255,72 @@ export const useGetMyTasks = () => {
     );
 };
 
+export const useTaskComments = ({
+    enabled = true,
+    projectId,
+    taskId,
+}: {
+    enabled?: boolean;
+    projectId?: string;
+    taskId?: string;
+}) => {
+    const trpc = useTRPC();
+
+    return useQuery({
+        ...trpc.task.getComments.queryOptions({
+            projectId: projectId ?? "",
+            taskId: taskId ?? "",
+        }),
+        enabled: Boolean(enabled && projectId && taskId),
+    });
+};
+
+export const useCreateTaskComment = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+
+    return useMutation(
+        trpc.task.createComment.mutationOptions({
+            onSuccess: (_data, variables) => {
+                toast.success("Comment added");
+                queryClient.invalidateQueries(
+                    trpc.task.getComments.queryOptions({
+                        projectId: variables.projectId,
+                        taskId: variables.taskId,
+                    }),
+                );
+            },
+            onError: (data) => {
+                console.log("Task comment creation Error:", data.message);
+                toast.error(data.message);
+            },
+        }),
+    );
+};
+
+export const useRemoveTaskComment = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+
+    return useMutation(
+        trpc.task.removeComment.mutationOptions({
+            onSuccess: (data) => {
+                toast.success("Comment removed");
+                queryClient.invalidateQueries(
+                    trpc.task.getComments.queryOptions({
+                        projectId: data.projectId,
+                        taskId: data.taskId,
+                    }),
+                );
+            },
+            onError: (data) => {
+                console.log("Task comment remove Error:", data.message);
+                toast.error(data.message);
+            },
+        }),
+    );
+};
+
 // Hook to create Document 
 export const useCreateDocument = () => {
     const queryClient = useQueryClient();

@@ -10,7 +10,8 @@ This document is the working plan and instruction set for adding the project cha
 4. Get user approval before starting implementation for each phase.
 5. Follow the current codebase patterns, folder structure, UI components, tRPC procedures, Prisma models, and existing hooks.
 6. After each phase, verify the feature with tests or manual checks before opening a pull request.
-7. Do not merge pull requests. The user will review and merge.
+7. Use Chrome for manual browser smoke tests whenever UI or local app verification is part of the phase.
+8. Do not merge pull requests. The user will review and merge.
 
 ## Branch And PR Workflow
 
@@ -353,6 +354,7 @@ Planned work:
   - `npx prisma generate`
   - `npm run lint`
   - `npm run build`
+- Run a Chrome smoke test against `http://localhost:3000` for affected UI flows and check the browser console for errors.
 - Fix UI layout issues on desktop and mobile.
 
 Expected result:
@@ -366,6 +368,41 @@ Approval gate:
 Suggested branch:
 
 - `feature/assistant-qa-polish`
+
+## Phase 9: Task Details Drawer Upgrade
+
+Goal: Improve the task details experience after the main assistant phases are complete by replacing the centered task details dialog with a right-side drawer/sheet.
+
+Decision:
+
+- Do not create a separate task details page yet.
+- Use a right-side task details drawer on desktop.
+- Use a full-screen drawer on mobile.
+- Keep a full task details page as a future option only if tasks later need shareable URLs, attachments, subtasks, linked documents, or deeper activity history.
+
+Planned work:
+
+- Replace the current centered task details dialog with a task details sheet/drawer.
+- Use a sticky drawer header with task title, status, close action, and task actions.
+- Keep task metadata compact near the top: assignee, due date, project, status, and description.
+- Render comments as a scrollable activity section.
+- Keep the add-comment composer easy to reach without hiding the existing comment list.
+- Ensure the drawer works well from table, Kanban, calendar, and sidebar task entry points.
+- Verify desktop and mobile layouts in Chrome.
+
+Expected result:
+
+- Users can inspect task details and comments without losing project context.
+- The UI has more room for comments and future task activity features.
+- The project page remains the primary workflow surface.
+
+Approval gate:
+
+- Confirm drawer width, mobile behavior, and whether task editing stays in the existing edit form or moves into the drawer.
+
+Suggested branch:
+
+- `ui-fix/upgrade-task-details-drawer`
 
 ## MVP Order
 
@@ -397,6 +434,7 @@ A phase is done only when:
 - The code follows the current project structure and patterns.
 - Database migrations are included when needed.
 - The feature is manually verified.
+- Chrome manual verification is completed for affected UI or local app flows, including a browser console error check.
 - Automated checks are run where possible.
 - A pull request is created.
 - The PR is not merged by the assistant.
