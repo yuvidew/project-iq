@@ -9,14 +9,13 @@ import {
     Columns3Icon,
     FileStackIcon,
     PlusIcon,
-    SettingsIcon,
-    TriangleAlertIcon,
-    UsersIcon,
     ZapIcon,
     ExternalLinkIcon,
     PencilIcon,
     Trash2Icon,
     FileTextIcon,
+    MessageSquareIcon,
+    SendIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -51,9 +50,11 @@ import { LoadingView } from "@/components/loading-view";
 import { useSuspenseProjectPerformance } from "../hooks/use-project-by-id";
 import {
     useChangeTaskPositionStatus,
-    useCreateTask,
+    useCreateTaskComment,
     useRemoveTask,
+    useRemoveTaskComment,
     useSuspenseTasks,
+    useTaskComments,
 } from "../hooks/use-task";
 import { TaskStatus } from "@/generated/prisma";
 import { useTaskParams } from "../hooks/use-taks-params";
@@ -64,8 +65,8 @@ import { SearchBox } from "@/components/search_box";
 import { Spinner } from "@/components/ui/spinner";
 import { Pagination } from "@/components/ui/pagination";
 import { ProjectsParams, Task } from "../types";
-import { ReactNode } from "react";
-import { differenceInDays, format } from "date-fns";
+import { type FormEvent, type ReactNode, useState } from "react";
+import { differenceInDays, format, formatDistanceToNow } from "date-fns";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -90,6 +91,9 @@ import { BadgeTaskStatus } from "@/components/ui/badge-task-status";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { Editor } from "./editor";
 import { DocumentLists } from "./document-list";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const ProjectTaskErrorView = () => {
     return <ErrorView message="Error loading tasks of projects" />;
@@ -151,6 +155,10 @@ export const TaskDate = ({ value, className }: TaskDateProps) => {
     );
 };
 
+const formatCommentSource = (source: string) => {
+    return source.charAt(0) + source.slice(1).toLowerCase();
+};
+
 interface MemberAvatarProps {
     name: string;
     className?: string;
@@ -181,6 +189,187 @@ export const MemberAvatar = ({
     );
 };
 
+interface TaskCommentsProps {
+    open: boolean;
+    projectId?: string;
+    taskId?: string;
+}
+
+const TaskComments = ({ open, projectId, taskId }: TaskCommentsProps) => {
+    const [content, setContent] = useState("");
+    const {
+        data: comments = [],
+        isError,
+        isLoading,
+    } = useTaskComments({
+        enabled: open,
+        projectId,
+        taskId,
+    });
+    const { mutate: createComment, isPending: isCreating } =
+        useCreateTaskComment();
+    const { mutate: removeComment, isPending: isRemoving } =
+        useRemoveTaskComment();
+
+    const trimmedContent = content.trim();
+    const canSubmit = Boolean(projectId && taskId && trimmedContent && !isCreating);
+
+    const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!projectId || !taskId || !trimmedContent) {
+            return;
+        }
+
+        createComment(
+            {
+                content: trimmedContent,
+                projectId,
+                taskId,
+            },
+            {
+                onSuccess: () => {
+                    setContent("");
+                },
+            },
+        );
+    };
+
+    return (
+        <section className="flex min-h-0 flex-col gap-4">
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <MessageSquareIcon className="size-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold">Comments</h3>
+                </div>
+                <Badge variant="secondary">{comments.length}</Badge>
+            </div>
+
+            <form onSubmit={onSubmit} className="flex flex-col gap-2">
+                <Textarea
+                    value={content}
+                    onChange={(event) => setContent(event.target.value)}
+                    placeholder="Add a comment..."
+                    maxLength={2000}
+                    className="min-h-20 resize-none text-sm"
+                    disabled={!projectId || !taskId || isCreating}
+                />
+                <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-muted-foreground">
+                        {trimmedContent.length}/2000
+                    </span>
+                    <Button
+                        type="submit"
+                        size="sm"
+                        disabled={!canSubmit}
+                    >
+                        {isCreating ? (
+                            <Spinner />
+                        ) : (
+                            <SendIcon className="size-4" />
+                        )}
+                        Add comment
+                    </Button>
+                </div>
+            </form>
+
+            <DottedSeparator />
+
+            <ScrollArea className="max-h-64 pr-3">
+                {isLoading ? (
+                    <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                        <Spinner />
+                        Loading comments...
+                    </div>
+                ) : isError ? (
+                    <p className="py-4 text-sm text-red-500">
+                        Unable to load comments.
+                    </p>
+                ) : comments.length === 0 ? (
+                    <p className="py-4 text-sm text-muted-foreground">
+                        No comments yet.
+                    </p>
+                ) : (
+                    <div className="flex flex-col gap-4">
+                        {comments.map((comment) => {
+                            const authorName =
+                                comment.author.name ?? comment.author.email ?? "Unknown";
+                            const createdAt = new Date(comment.createdAt);
+                            const createdAtLabel = Number.isNaN(createdAt.getTime())
+                                ? ""
+                                : formatDistanceToNow(createdAt, { addSuffix: true });
+                            const createdAtTitle = Number.isNaN(createdAt.getTime())
+                                ? undefined
+                                : format(createdAt, "MMM d, yyyy h:mm a");
+
+                            return (
+                                <article
+                                    key={comment.id}
+                                    className="flex gap-3 rounded-md border bg-muted/20 p-3"
+                                >
+                                    <MemberAvatar
+                                        name={authorName}
+                                        fallbackClassName="text-[10px]"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-medium">
+                                                    {authorName}
+                                                </p>
+                                                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                                    {createdAtLabel && (
+                                                        <time title={createdAtTitle}>
+                                                            {createdAtLabel}
+                                                        </time>
+                                                    )}
+                                                    <Badge
+                                                        variant={
+                                                            comment.source === "CHAT" ? "blue" : "outline"
+                                                        }
+                                                        className="px-1.5 py-0.5"
+                                                    >
+                                                        {formatCommentSource(comment.source)}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                            {comment.canDelete && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon-sm"
+                                                    disabled={isRemoving}
+                                                    onClick={() => {
+                                                        if (!projectId || !taskId) {
+                                                            return;
+                                                        }
+
+                                                        removeComment({
+                                                            commentId: comment.id,
+                                                            projectId,
+                                                            taskId,
+                                                        });
+                                                    }}
+                                                    aria-label="Delete comment"
+                                                >
+                                                    <Trash2Icon className="size-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">
+                                            {comment.content}
+                                        </p>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                )}
+            </ScrollArea>
+        </section>
+    );
+};
+
 const TaskDetail = () => {
     const { setOpen, open, initialState } = useTaskDetails();
     const taskStatus = initialState.status ?? TaskStatus.TODO;
@@ -197,39 +386,52 @@ const TaskDetail = () => {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent>
-                <DialogHeader className=" flex flex-col items-start">
-                    <div className="flex items-start gap-2">
-                        <DialogTitle>{initialState.name || "Task details"}</DialogTitle>
+            <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-2xl">
+                <ScrollArea className="max-h-[calc(90vh-3rem)] pr-4">
+                    <div className="flex flex-col gap-4">
+                        <DialogHeader className=" flex flex-col items-start">
+                            <div className="flex items-start gap-2 pr-8">
+                                <DialogTitle>
+                                    {initialState.name || "Task details"}
+                                </DialogTitle>
 
-                        <BadgeTaskStatus status={taskStatus} />
+                                <BadgeTaskStatus status={taskStatus} />
+                            </div>
+
+                            <DialogDescription className="text-muted-foreground text-left">
+                                {initialState.description || "No description"}
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <DottedSeparator />
+                        <div className="flex items-center gap-x-1.5">
+                            <MemberAvatar
+                                name={assigneeName}
+                                fallbackClassName="text-[10px]"
+                            />
+                            <div className="size-1 rounded-full bg-neutral-300" />
+                            <span className={cn("truncate text-xs")}>
+                                {dueDateLabel}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-x-1.5">
+                            <ProjectAvatar
+                                name={projectName}
+                                fallbackClassName="text-[10px]"
+                            />
+                            <span className="text-xs font-medium">
+                                {projectName}
+                            </span>
+                        </div>
+
+                        <DottedSeparator />
+                        <TaskComments
+                            open={open}
+                            projectId={initialState.projectId}
+                            taskId={initialState.id}
+                        />
                     </div>
-
-                    <DialogDescription className="text-muted-foreground text-left">
-                        {initialState.description || "No description"}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <DottedSeparator />
-                <div className="flex items-center gap-x-1.5">
-                    <MemberAvatar
-                        name={assigneeName}
-                        fallbackClassName="text-[10px]"
-                    />
-                    <div className="size-1 rounded-full bg-neutral-300" />
-                    <span className={cn("truncate text-xs")}>
-                        {dueDateLabel}
-                    </span>
-                </div>
-                <div className="flex items-center gap-x-1.5">
-                    <ProjectAvatar
-                        name={projectName}
-                        fallbackClassName="text-[10px]"
-                    />
-                    <span className="text-xs font-medium">
-                        {projectName}
-                    </span>
-                </div>
+                </ScrollArea>
             </DialogContent>
         </Dialog>
     );

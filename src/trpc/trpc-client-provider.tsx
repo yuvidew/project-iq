@@ -33,10 +33,24 @@ function getQueryClient() {
     if (!browserQueryClient) browserQueryClient = makeQueryClient();
     return browserQueryClient;
 }
-function getUrl() {
+function getUrl(headers?: HeadersInit) {
     const base = (() => {
         if (typeof window !== 'undefined') return '';
         if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+        const requestHeaders = new Headers(headers);
+        const host =
+            requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+
+        if (host) {
+            const protocol =
+                requestHeaders.get("x-forwarded-proto") ??
+                (host.startsWith("localhost") || host.startsWith("127.0.0.1")
+                    ? "http"
+                    : "https");
+
+            return `${protocol}://${host}`;
+        }
+
         return 'http://localhost:3000';
     })();
     return `${base}/api/trpc`;
@@ -70,7 +84,7 @@ export function TRPCReactProvider({
                     })
                     : httpBatchLink({
                         transformer: superjson,
-                        url: getUrl(),
+                        url: getUrl(initialHeaders),
                         // Forward incoming request headers (cookies) during SSR
                         headers() {
                             return initialHeaders ?? {};

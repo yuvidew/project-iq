@@ -1,4 +1,9 @@
-import { ProjectPriority, ProjectStatus, TaskStatus } from "@/generated/prisma";
+import {
+    ProjectPriority,
+    ProjectStatus,
+    TaskCommentSource,
+    TaskStatus,
+} from "@/generated/prisma";
 
 export type Task = {
     description: string | null;
@@ -37,4 +42,20 @@ export type ProjectsParams = {
     assigneeId?: string;
 };
 
+export type TaskComment = {
+    id: string;
+    taskId: string;
+    authorId: string;
+    content: string;
+    source: TaskCommentSource;
+    createdAt: Date;
+    updatedAt: Date;
+    canDelete: boolean;
+    author: {
+        email: string;
+        id: string;
+        image: string | null;
+        name: string | null;
+    };
+};
 

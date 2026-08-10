@@ -1,4 +1,10 @@
-import { Prisma, TaskStatus } from "@/generated/prisma";
+import {
+    OrganizationRole,
+    Prisma,
+    ProjectMemberRole,
+    TaskCommentSource,
+    TaskStatus,
+} from "@/generated/prisma";
 import { PAGINATION } from "@/lib/config";
 import prisma from "@/lib/db";
 import { updateProjectStatus } from "@/server/helpers/updateProjectStatus";
@@ -7,6 +13,90 @@ import { google } from "@ai-sdk/google";
 import { TRPCError } from "@trpc/server";
 import { generateText } from "ai";
 import z from "zod";
+
+const taskCommentInput = z.object({
+    projectId: z.string(),
+    taskId: z.string(),
+});
+
+const getTaskForCommentAccess = async ({
+    projectId,
+    taskId,
+}: z.infer<typeof taskCommentInput>) => {
+    const task = await prisma.task.findFirst({
+        where: {
+            id: taskId,
+            projectId,
+        },
+        select: {
+            id: true,
+            projectId: true,
+            project: {
+                select: {
+                    organizationSlug: true,
+                    projectLeadEmail: true,
+                },
+            },
+        },
+    });
+
+    if (!task) {
+        throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Task not found",
+        });
+    }
+
+    return task;
+};
+
+const getProjectCommentAccess = async ({
+    organizationSlug,
+    projectLeadEmail,
+    projectId,
+    userEmail,
+    userId,
+}: {
+    organizationSlug: string;
+    projectLeadEmail: string | null;
+    projectId: string;
+    userEmail: string;
+    userId: string;
+}) => {
+    const [organizationMember, projectMember] = await Promise.all([
+        prisma.organizationMember.findUnique({
+            where: {
+                userId_organizationSlug: {
+                    userId,
+                    organizationSlug,
+                },
+            },
+            select: { role: true },
+        }),
+        prisma.projectMember.findUnique({
+            where: {
+                projectId_userId: {
+                    projectId,
+                    userId,
+                },
+            },
+            select: { role: true },
+        }),
+    ]);
+
+    const isOrganizationAdmin =
+        organizationMember?.role === OrganizationRole.OWNER ||
+        organizationMember?.role === OrganizationRole.ADMIN;
+    const isProjectMember = Boolean(projectMember);
+    const isProjectLead = projectMember?.role === ProjectMemberRole.LEAD;
+    const isListedProjectLead =
+        Boolean(projectLeadEmail) && projectLeadEmail === userEmail;
+
+    return {
+        canAccess: isOrganizationAdmin || isProjectMember || isListedProjectLead,
+        canModerate: isOrganizationAdmin || isProjectLead || isListedProjectLead,
+    };
+};
 
 export const taskRouter = router({
     create: protectedProcedure
@@ -249,6 +339,163 @@ export const taskRouter = router({
             await updateProjectStatus(projectId);
 
             return task;
+        }),
+    getComments: protectedProcedure
+        .input(taskCommentInput)
+        .query(async ({ input, ctx }) => {
+            const userId = ctx.auth.user.id;
+            const userEmail = ctx.auth.user.email;
+            const task = await getTaskForCommentAccess(input);
+            const access = await getProjectCommentAccess({
+                organizationSlug: task.project.organizationSlug,
+                projectLeadEmail: task.project.projectLeadEmail,
+                projectId: task.projectId,
+                userEmail,
+                userId,
+            });
+
+            if (!access.canAccess) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "You don't have permission to view task comments",
+                });
+            }
+
+            const comments = await prisma.taskComment.findMany({
+                where: {
+                    taskId: task.id,
+                },
+                orderBy: {
+                    createdAt: "asc",
+                },
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            image: true,
+                        },
+                    },
+                },
+            });
+
+            return comments.map((comment) => ({
+                ...comment,
+                canDelete: access.canModerate || comment.authorId === userId,
+            }));
+        }),
+    createComment: protectedProcedure
+        .input(
+            taskCommentInput.extend({
+                content: z.string().trim().min(1).max(2000),
+            }),
+        )
+        .mutation(async ({ input, ctx }) => {
+            const userId = ctx.auth.user.id;
+            const userEmail = ctx.auth.user.email;
+            const task = await getTaskForCommentAccess(input);
+            const access = await getProjectCommentAccess({
+                organizationSlug: task.project.organizationSlug,
+                projectLeadEmail: task.project.projectLeadEmail,
+                projectId: task.projectId,
+                userEmail,
+                userId,
+            });
+
+            if (!access.canAccess) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "You don't have permission to comment on this task",
+                });
+            }
+
+            const comment = await prisma.taskComment.create({
+                data: {
+                    taskId: task.id,
+                    authorId: userId,
+                    content: input.content,
+                    source: TaskCommentSource.MANUAL,
+                },
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            image: true,
+                        },
+                    },
+                },
+            });
+
+            return {
+                ...comment,
+                canDelete: true,
+            };
+        }),
+    removeComment: protectedProcedure
+        .input(
+            taskCommentInput.extend({
+                commentId: z.string(),
+            }),
+        )
+        .mutation(async ({ input, ctx }) => {
+            const userId = ctx.auth.user.id;
+            const userEmail = ctx.auth.user.email;
+            const task = await getTaskForCommentAccess(input);
+            const access = await getProjectCommentAccess({
+                organizationSlug: task.project.organizationSlug,
+                projectLeadEmail: task.project.projectLeadEmail,
+                projectId: task.projectId,
+                userEmail,
+                userId,
+            });
+
+            if (!access.canAccess) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "You don't have permission to view task comments",
+                });
+            }
+
+            const comment = await prisma.taskComment.findFirst({
+                where: {
+                    id: input.commentId,
+                    taskId: task.id,
+                },
+                select: {
+                    id: true,
+                    authorId: true,
+                    taskId: true,
+                },
+            });
+
+            if (!comment) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Comment not found",
+                });
+            }
+
+            if (!access.canModerate && comment.authorId !== userId) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "You don't have permission to delete this comment",
+                });
+            }
+
+            await prisma.taskComment.delete({
+                where: {
+                    id: comment.id,
+                },
+            });
+
+            return {
+                id: comment.id,
+                taskId: comment.taskId,
+                projectId: task.projectId,
+            };
         }),
     update: protectedProcedure
         .input(
