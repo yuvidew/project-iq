@@ -1160,39 +1160,40 @@ export const projectAssistantRouter = router({
         userId: ctx.auth.user.id,
       });
 
-      const result = await prisma.$transaction(async (tx) => {
-        const userMessage = await tx.chatMessage.create({
-          data: {
-            sessionId: session.id,
-            role: ChatMessageRole.USER,
-            content: input.message,
-          },
-        });
-        const assistantMessage = await tx.chatMessage.create({
-          data: {
-            sessionId: session.id,
-            role: ChatMessageRole.ASSISTANT,
-            content: response.answer,
-            responseType: response.type,
-            metadata: buildMessageMetadata(response),
-          },
-        });
-        const updatedSession = await tx.chatSession.update({
-          where: { id: session.id },
-          data: {
-            ...(session.title
-              ? {}
-              : { title: createSessionTitle(input.message) }),
-            updatedAt: new Date(),
-          },
-        });
+      const [userMessage, assistantMessage, updatedSession] =
+        await prisma.$transaction([
+          prisma.chatMessage.create({
+            data: {
+              sessionId: session.id,
+              role: ChatMessageRole.USER,
+              content: input.message,
+            },
+          }),
+          prisma.chatMessage.create({
+            data: {
+              sessionId: session.id,
+              role: ChatMessageRole.ASSISTANT,
+              content: response.answer,
+              responseType: response.type,
+              metadata: buildMessageMetadata(response),
+            },
+          }),
+          prisma.chatSession.update({
+            where: { id: session.id },
+            data: {
+              ...(session.title
+                ? {}
+                : { title: createSessionTitle(input.message) }),
+              updatedAt: new Date(),
+            },
+          }),
+        ]);
 
-        return {
-          assistantMessage,
-          session: updatedSession,
-          userMessage,
-        };
-      });
+      const result = {
+        assistantMessage,
+        session: updatedSession,
+        userMessage,
+      };
 
       return {
         ...result,
